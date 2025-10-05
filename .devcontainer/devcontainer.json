@@ -1,0 +1,81 @@
+{
+	"name": "Raugupatis Log - Rust Development",
+	"image": "mcr.microsoft.com/devcontainers/rust:1-1-bullseye",
+	
+	"features": {
+		"ghcr.io/devcontainers/features/node:1": {
+			"version": "18"
+		},
+		"ghcr.io/devcontainers/features/docker-in-docker:2": {}
+	},
+
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"vadimcn.vscode-lldb",
+				"serayuzgur.crates",
+				"tamasfe.even-better-toml",
+				"usernamehw.errorlens",
+				"mutantdino.resourcemonitor",
+				"ms-vscode.hexdump",
+				"alexcvzz.vscode-sqlite",
+				"qwtel.sqlite-viewer",
+				"ms-vscode.vscode-json",
+				"bradlc.vscode-tailwindcss",
+				"formulahendry.auto-rename-tag",
+				"ms-vscode.live-server",
+				"github.copilot",
+				"github.copilot-chat"
+			],
+			"settings": {
+				"rust-analyzer.checkOnSave.command": "clippy",
+				"rust-analyzer.cargo.features": "all",
+				"rust-analyzer.completion.addCallArgumentSnippets": true,
+				"rust-analyzer.completion.addCallParenthesis": true,
+				"rust-analyzer.inlayHints.enable": true,
+				"rust-analyzer.inlayHints.parameterHints.enable": true,
+				"rust-analyzer.inlayHints.typeHints.enable": true,
+				"rust-analyzer.lens.enable": true,
+				"rust-analyzer.lens.implementations.enable": true,
+				"rust-analyzer.lens.references.enable": true,
+				"rust-analyzer.lens.run.enable": true,
+				"files.watcherExclude": {
+					"**/target/**": true
+				},
+				"terminal.integrated.defaultProfile.linux": "bash"
+			}
+		}
+	},
+
+	"containerEnv": {
+		"RUST_BACKTRACE": "1",
+		"CARGO_INCREMENTAL": "1",
+		"CARGO_TARGET_DIR": "/tmp/target"
+	},
+
+	"mounts": [
+		"source=${localWorkspaceFolder}/target,target=/tmp/target,type=bind,consistency=cached"
+	],
+
+	"postCreateCommand": "rustup component add clippy rustfmt && cargo install cargo-watch cargo-nextest sqlx-cli",
+
+	"remoteUser": "vscode",
+
+	"forwardPorts": [3000, 8080],
+
+	"portsAttributes": {
+		"3000": {
+			"label": "Raugupatis Log App",
+			"onAutoForward": "notify"
+		},
+		"8080": {
+			"label": "Development Server",
+			"onAutoForward": "ignore"
+		}
+	},
+
+	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+
+	"shutdownAction": "stopContainer"
+}
