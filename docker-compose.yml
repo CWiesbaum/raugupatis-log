@@ -1,0 +1,30 @@
+# Docker Compose for local development and testing
+version: '3.8'
+
+services:
+  raugupatis-log:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persistent data storage
+      - ./data:/app/data
+      # Configuration override for development
+      - ./config/development.toml:/app/config/local.toml:ro
+    environment:
+      - ENVIRONMENT=development
+      - RUST_LOG=debug
+      - RAUGUPATIS_SESSION_SECRET=dev-session-secret-key
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+volumes:
+  data:
+    driver: local

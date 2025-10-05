@@ -1,0 +1,55 @@
+[package]
+name = "raugupatis-log"
+version = "0.1.0"
+edition = "2021"
+authors = ["Raugupatis Log Contributors"]
+description = "Fermentation tracking application built with Rust"
+license = "MIT"
+
+[dependencies]
+# Web framework
+axum = "0.7"
+tokio = { version = "1.0", features = ["full"] }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "compression-gzip", "cors", "trace"] }
+tower-sessions = "0.12"
+
+# Templates
+askama = { version = "0.12", features = ["with-axum"] }
+askama_axum = "0.4"
+
+# Database
+rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite_migration = "1.0"
+
+# Authentication & Security
+argon2 = "0.5"
+
+# Serialization
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+
+# Configuration
+config = { version = "0.14", features = ["toml"] }
+
+# Logging and tracing
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# HTTP types
+http = "1.0"
+
+# Date and time
+chrono = { version = "0.4", features = ["serde"] }
+
+# Environment variables
+dotenvy = "0.15"
+
+[dev-dependencies]
+axum-test = "14.0"
+proptest = "1.4"
+tokio-test = "0.4"
+
+[[bin]]
+name = "raugupatis-log"
+path = "src/main.rs"

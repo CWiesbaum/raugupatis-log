@@ -1,0 +1,4 @@
+server_address = "0.0.0.0:3000"
+database_url = "sqlite:data/raugupatis.db"
+environment = "production"
+# session_secret should be set via environment variable RAUGUPATIS_SESSION_SECRET
