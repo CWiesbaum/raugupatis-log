@@ -242,7 +242,11 @@
         </div>
         
         <div class="actions">
+            {% if user_email.is_none() %}
             <a href="/login" class="btn btn-primary">Login</a>
+            {% else %}
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            {% endif %}
       </div>
         <div class="cta-section">
             <a href="/register" class="btn btn-primary">Register Now</a>

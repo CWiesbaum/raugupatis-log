@@ -1,17 +1,23 @@
 use askama::Template;
 use axum::response::Html;
+use tower_sessions::Session;
 
 #[derive(Template)]
 #[template(path = "home.html")]
 pub struct HomeTemplate {
     pub title: String,
     pub message: String,
+    pub user_email: Option<String>,
 }
 
-pub async fn home_handler() -> Html<String> {
+pub async fn home_handler(session: Session) -> Html<String> {
+    // Check if user is logged in by looking for user_email in session
+    let user_email = session.get::<String>("user_email").await.ok().flatten();
+
     let template = HomeTemplate {
         title: "Raugupatis Log".to_string(),
         message: "Welcome to Raugupatis Log - Your Fermentation Tracking Companion!".to_string(),
+        user_email,
     };
     
     Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))

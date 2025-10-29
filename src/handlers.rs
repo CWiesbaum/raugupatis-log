@@ -5,6 +5,7 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use tower_sessions::Session;
 
 use crate::auth::verify_password;
 use crate::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse};
@@ -104,6 +105,7 @@ fn is_valid_email(email: &str) -> bool {
 
 pub async fn login_user(
     State(state): State<AppState>,
+    session: Session,
     Json(request): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, ApiError> {
     // Validate email format
@@ -137,11 +139,23 @@ pub async fn login_user(
 
     // Verify password
     match verify_password(&request.password, &user.password_hash) {
-        Ok(true) => Ok(Json(LoginResponse {
-            success: true,
-            user: Some(UserResponse::from(user)),
-            message: "Login successful".to_string(),
-        })),
+        Ok(true) => {
+            // Store user information in session
+            session
+                .insert("user_id", user.id)
+                .await
+                .map_err(|e| ApiError::InternalError(format!("Failed to create session: {}", e)))?;
+            session
+                .insert("user_email", user.email.clone())
+                .await
+                .map_err(|e| ApiError::InternalError(format!("Failed to create session: {}", e)))?;
+
+            Ok(Json(LoginResponse {
+                success: true,
+                user: Some(UserResponse::from(user)),
+                message: "Login successful".to_string(),
+            }))
+        }
         Ok(false) => Ok(Json(LoginResponse {
             success: false,
             user: None,

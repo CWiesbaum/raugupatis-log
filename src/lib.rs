@@ -8,6 +8,7 @@ use tower_http::{
     cors::CorsLayer,
     trace::TraceLayer,
 };
+use tower_sessions::{cookie::time, MemoryStore, SessionManagerLayer};
 use std::sync::Arc;
 
 pub mod auth;
@@ -29,6 +30,12 @@ pub struct AppState {
 }
 
 pub fn create_router(app_state: AppState) -> Router {
+    // Create session store and layer
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false) // Set to true in production with HTTPS
+        .with_expiry(tower_sessions::Expiry::OnInactivity(time::Duration::days(1))); // 24 hours
+
     Router::new()
         .route("/", get(crate::templates::home_handler))
         .route("/register", get(crate::templates::register_handler))
@@ -41,6 +48,7 @@ pub fn create_router(app_state: AppState) -> Router {
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
+                .layer(session_layer)
                 .layer(CompressionLayer::new())
                 .layer(CorsLayer::permissive()),
         )
