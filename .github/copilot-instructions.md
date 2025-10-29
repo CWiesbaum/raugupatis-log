@@ -3,6 +3,11 @@
 ## Project Overview
 Raugupatis Log is a fermentation tracking application built with Rust, featuring server-side rendering with Axum + Askama templates and SQLite for data persistence. Named after the Baltic deity of fermentation, it helps users monitor and optimize their fermentation processes through precise data logging and visualization.
 
+### Current Implementation Status
+- **Phase 1 (Complete)**: Basic authentication, user registration/login, database schema, testing infrastructure
+- **Phase 2 (In Progress)**: Session management, protected routes, fermentation CRUD operations
+- **Phase 3 (Planned)**: Temperature logging with charts, photo uploads, dashboard analytics
+
 ## Architecture & Technology Stack
 
 ### Core Stack
@@ -37,14 +42,20 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 
 ## Authentication & Session Management
 
-### Authentication Flow Implementation
-```rust
-// Use tower-sessions with SQLite backend for session persistence
-// Password hashing with argon2 crate (OWASP recommended)
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use tower_sessions::{Session, SessionManagerLayer};
+### Current Implementation (Phase 1)
+- **User registration**: Argon2 password hashing, email validation, experience level tracking
+- **User login**: Email/password verification with secure comparison
+- **Database repository pattern**: UserRepository for clean data access layer
+- **API endpoints**: `/api/users/register` and `/api/users/login`
 
-// Session structure
+### Next Steps: Session Management (Phase 2)
+```rust
+// TODO: Implement tower-sessions with SQLite backend for session persistence
+// Password hashing with argon2 crate (OWASP recommended) - DONE
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier}; // Already implemented
+use tower_sessions::{Session, SessionManagerLayer}; // Dependency added, not yet used
+
+// Session structure to implement
 #[derive(Serialize, Deserialize)]
 struct UserSession {
     user_id: i64,
@@ -54,16 +65,16 @@ struct UserSession {
 }
 ```
 
-### Middleware Stack (Order Matters)
-1. **TraceLayer** - Request logging and tracing
-2. **SessionManagerLayer** - Session handling before auth
-3. **AuthLayer** - Custom auth middleware checking sessions
-4. **CorsLayer** - CORS handling for API endpoints
-5. **CompressionLayer** - Response compression
+### Target Middleware Stack (Order Matters)
+1. **TraceLayer** - Request logging and tracing ✅ (implemented)
+2. **SessionManagerLayer** - Session handling before auth (TODO)
+3. **AuthLayer** - Custom auth middleware checking sessions (TODO)
+4. **CorsLayer** - CORS handling for API endpoints ✅ (implemented)
+5. **CompressionLayer** - Response compression ✅ (implemented)
 
-### Authorization Patterns
-- Use `RequireAuthorizationLayer` for protected routes
-- Implement role-based access with custom extractors
+### Authorization Patterns (To Implement)
+- Use `RequireAuthorizationLayer` for protected routes (dashboard, fermentation endpoints)
+- Implement role-based access with custom extractors (admin vs. user)
 - Session expiry: 24h normal, 30 days for "remember me"
 
 ### Fermentation Tracking
