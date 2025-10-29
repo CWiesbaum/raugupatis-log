@@ -387,3 +387,118 @@ async fn test_dashboard_page_loads() {
 
     assert_eq!(response.status(), StatusCode::OK);
 }
+
+#[tokio::test]
+async fn test_home_page_shows_login_button_when_not_logged_in() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should show Login button when not logged in
+    assert!(body_str.contains("Login"));
+    assert!(body_str.contains("/login"));
+}
+
+#[tokio::test]
+async fn test_home_page_hides_login_button_when_logged_in() {
+    use axum::http::header;
+    use tower::ServiceExt;
+    
+    let app_state = create_test_app_state().await;
+    let app = raugupatis_log::create_router(app_state);
+    
+    // First register a user
+    let register_body = json!({
+        "email": "hometest@example.com",
+        "password": "securepassword123"
+    });
+
+    let response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Now login with correct credentials
+    let login_body = json!({
+        "email": "hometest@example.com",
+        "password": "securepassword123"
+    });
+
+    let login_response = app
+        .clone()
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(login_response.status(), StatusCode::OK);
+
+    // Extract the session cookie from the response
+    let cookies = login_response
+        .headers()
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .filter_map(|v| v.to_str().ok())
+        .collect::<Vec<_>>();
+
+    assert!(!cookies.is_empty(), "Should have session cookie");
+
+    // Now request the home page with the session cookie
+    let mut home_request = Request::builder().uri("/").body(Body::empty()).unwrap();
+    
+    // Add session cookies to the request
+    let cookie_header = cookies
+        .iter()
+        .map(|c| c.split(';').next().unwrap_or(c))
+        .collect::<Vec<_>>()
+        .join("; ");
+    home_request.headers_mut().insert(
+        header::COOKIE,
+        cookie_header.parse().unwrap(),
+    );
+
+    let home_response = app
+        .oneshot(home_request)
+        .await
+        .unwrap();
+
+    assert_eq!(home_response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(home_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+
+    // Should NOT show Login button link when logged in
+    assert!(!body_str.contains(r#"href="/login""#));
+    // Should show Dashboard button instead
+    assert!(body_str.contains("Go to Dashboard"));
+    assert!(body_str.contains("/dashboard"));
+}
+
