@@ -217,3 +217,5 @@ docker run -p 3000:3000 -v ./data:/app/data raugupatis-log:latest
 6. Add integration tests covering the full HTTP request cycle
 7. Ensure mobile-responsive design and accessibility in templates
 8. Update API documentation and add logging/tracing as needed
+9. Ensure that README.md, PROJECT_SETUP.md and relevant docs are updated with new feature details
+10. Ensure that copilot-instructions.md reflects any architectural or design changes
