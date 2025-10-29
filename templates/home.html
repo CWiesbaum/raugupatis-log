@@ -164,6 +164,31 @@
             box-shadow: 0 6px 20px rgba(81, 207, 102, 0.4);
         }
         
+        .btn-logout {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.8);
+        }
+        
+        .btn-logout:hover {
+            background: rgba(244, 67, 54, 0.7);
+            border-color: rgba(244, 67, 54, 1);
+        }
+        
+        .user-info {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .user-info-label {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .user-info-email {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -241,16 +266,25 @@
             <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
         </div>
         
+        {% if user_email.is_none() %}
         <div class="actions">
-            {% if user_email.is_none() %}
             <a href="/login" class="btn btn-primary">Login</a>
-            {% else %}
-            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
-            {% endif %}
       </div>
         <div class="cta-section">
             <a href="/register" class="btn btn-primary">Register Now</a>
         </div>
+        {% else %}
+        <div class="actions">
+            <div class="user-info">
+                <p class="user-info-label">Logged in as:</p>
+                <p class="user-info-email">{{ user_email.as_ref().unwrap() }}</p>
+            </div>
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            <form action="/api/users/logout" method="post" style="display: inline;">
+                <button type="submit" class="btn btn-logout">Logout</button>
+            </form>
+        </div>
+        {% endif %}
     </div>
 </body>
 </html>

@@ -107,6 +107,15 @@
             border-color: rgba(255, 255, 255, 0.6);
             transform: translateY(-2px);
         }
+        .logout-button {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.6);
+            cursor: pointer;
+        }
+        .logout-button:hover {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.8);
+        }
         .back-link {
             text-align: center;
             margin-top: 1.5rem;
@@ -179,6 +188,7 @@
             <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Start New Fermentation</a>
             <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">View My Fermentations</a>
             <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Browse Recipes</a>
+            <button type="button" class="action-button logout-button" id="logoutButton" aria-label="Logout from your account">Logout</button>
         </div>
         
         <div class="back-link">
@@ -208,6 +218,18 @@
             } catch (error) {
                 console.error('Error parsing user data:', error);
             }
+        }
+
+        // Handle logout
+        const logoutButton = document.getElementById('logoutButton');
+        if (logoutButton) {
+            logoutButton.addEventListener('click', () => {
+                // Clear session storage
+                sessionStorage.removeItem('user');
+                
+                // Redirect to home page
+                window.location.href = '/';
+            });
         }
     </script>
 </body>

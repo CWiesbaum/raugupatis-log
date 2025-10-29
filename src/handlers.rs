@@ -168,6 +168,17 @@ pub async fn login_user(
     }
 }
 
+pub async fn logout_user(session: Session) -> Result<impl IntoResponse, ApiError> {
+    // Clear the session
+    session
+        .flush()
+        .await
+        .map_err(|e| ApiError::InternalError(format!("Failed to clear session: {}", e)))?;
+    
+    // Redirect to home page
+    Ok(axum::response::Redirect::to("/"))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

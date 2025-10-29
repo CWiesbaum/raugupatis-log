@@ -21,7 +21,7 @@ pub mod templates;
 
 pub use config::AppConfig;
 pub use database::Database;
-use handlers::{login_user, register_user};
+use handlers::{login_user, logout_user, register_user};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -44,6 +44,7 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/dashboard", get(crate::templates::dashboard_handler))
         .route("/api/users/register", post(register_user))
         .route("/api/users/login", post(login_user))
+        .route("/api/users/logout", post(logout_user))
         .with_state(app_state)
         .layer(
             ServiceBuilder::new()
