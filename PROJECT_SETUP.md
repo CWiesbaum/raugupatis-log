@@ -17,17 +17,31 @@
 - Photo upload functionality
 - Dashboard analytics
 
-## Project Structure Created
+## Project Structure
+
+The project follows a **domain-based architecture** with high cohesion and low coupling:
 
 ```
 raugupatis-log/
 ├── src/
 │   ├── main.rs              # Main application entry point with Axum server
+│   ├── lib.rs               # Library entry point and router setup
 │   ├── config.rs            # Configuration management with TOML support
 │   ├── database.rs          # SQLite database connection and migration handling
-│   └── templates.rs         # Askama template definitions
+│   ├── templates.rs         # General template handlers (home, dashboard)
+│   └── users/               # User management domain (all user-related code)
+│       ├── mod.rs           # Module exports
+│       ├── auth.rs          # Password hashing and verification
+│       ├── handlers.rs      # User API handlers (register, login, logout)
+│       ├── models.rs        # User data models and DTOs
+│       ├── repository.rs    # User database operations
+│       └── templates.rs     # User template handlers
 ├── templates/
-│   └── home.html            # Home page template with beautiful styling
+│   ├── home.html            # Home page template
+│   ├── dashboard.html       # Dashboard template
+│   └── users/               # User-related templates
+│       ├── login.html       # Login page template
+│       └── register.html    # Registration page template
 ├── migrations/
 │   └── 001_initial_schema.sql # Database schema with all core tables
 ├── config/
@@ -38,7 +52,7 @@ raugupatis-log/
 │   ├── setup-dev.sh         # Development environment setup script
 │   └── deploy.sh            # Production deployment script
 ├── tests/
-│   └── integration_tests.rs # Integration test framework (placeholder)
+│   └── integration_tests.rs # Integration test framework
 ├── Cargo.toml               # Rust dependencies and project metadata
 ├── Dockerfile               # Multi-stage OCI container specification
 ├── docker-compose.yml       # Docker Compose for local development
@@ -48,6 +62,14 @@ raugupatis-log/
 ├── LICENSE                  # Project license
 └── README.md                # Project documentation
 ```
+
+### Architecture Benefits
+
+- **Domain-driven structure**: Code organized by feature domain (users, fermentation, etc.) rather than by type
+- **High cohesion**: Related code is grouped together in domain modules
+- **Low coupling**: Domains are isolated with clear boundaries
+- **Scalability**: New domains can be added following the same pattern
+- **Reduced merge conflicts**: Changes to one domain don't affect others
 
 ## ✅ What's Working
 

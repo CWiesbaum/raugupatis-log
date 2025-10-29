@@ -7,9 +7,9 @@ use axum::{
 use serde_json::json;
 use tower_sessions::Session;
 
-use crate::auth::verify_password;
-use crate::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse, UserSession};
-use crate::repository::UserRepository;
+use crate::users::auth::verify_password;
+use crate::users::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse, UserSession};
+use crate::users::repository::UserRepository;
 use crate::AppState;
 
 #[derive(Debug)]
