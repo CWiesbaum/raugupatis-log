@@ -4,32 +4,42 @@ Raugupatis is the ultimate fermentation tracker. Log and monitor your food ferme
 Named after the Baltic deity of fermentation and pickles, Raugupatis Log brings ancient wisdom into the modern kitchen, helping you achieve consistent, high-quality fermentation results through precise monitoring and data-driven insights.
 
 # Functionality
-The following functionality is supported by **Raugupatis Log**
 
-## User Management
-- **User registration**: New users can create accounts with secure password hashing and email validation. Registration includes basic profile setup with fermentation experience level and preferred fermentation types.
-- **User login**: Secure authentication system with session management and optional "remember me" functionality for convenient access across devices.
-- **User logout**: Clean session termination with proper security cleanup and optional logout from all devices.
-- **User Administration (via Admin role)**: Administrative interface for managing users, viewing system statistics, moderating shared fermentation logs, and maintaining fermentation profile templates.
+## Current Status
+Raugupatis Log is under active development. The core foundation and authentication system are operational, with fermentation tracking features in progress.
 
-## Fermentation Logging
-- **Create new fermentation**: Start tracking a new batch with metadata including ingredients and initial conditions. Support for photo uploads to document the starting state.
-- **Finish running fermentation**: Mark fermentations as complete with final notes, success ratings, taste profiles, and lessons learned. Generate completion reports with full batch history.
-- **Browse historical fermentations**: Search and filter past fermentations by type, date range, success rating, or ingredients. Compare different batches to identify patterns and optimize techniques.
-- **Add optional temperature data points for fermentation**: Log temperature readings manually.
-- **Display graph for temperature data points**: Interactive charts showing temperature curves over time.
-- **Select from predefined List of common fermentation profiles**: Comprehensive database of fermentation templates including:
+## ✅ Implemented Features
+
+### User Management
+- **User registration**: New users can create accounts with secure Argon2 password hashing and email validation. Registration includes basic profile setup with fermentation experience level.
+- **User login**: Basic authentication system with email/password validation.
+
+### Database & Infrastructure
+- **Complete database schema**: All tables designed and created (users, fermentation_profiles, fermentations, temperature_logs, fermentation_photos)
+- **Predefined fermentation profiles**: Database seeded with 7 common fermentation templates:
   - **Pickles**: 3-7 days, 65-75°F, salt brine fermentation
   - **Kombucha**: 7-14 days, 68-78°F, SCOBY-based fermentation
   - **Kimchi**: 3-5 days room temp + refrigeration, 65-75°F initial fermentation
   - **Sauerkraut**: 2-4 weeks, 65-72°F, dry salt fermentation
   - **Sourdough starter**: 5-7 days establishment, 70-80°F maintenance
-  - **Kefir**: 12-24 hours, 68-76°F, milk or water kefir grains
-- **Countdown timer functionality**: When starting a new fermentation, users specify either a date range (minimum-maximum days) or exact duration. The system provides:
-  - Daily countdown display showing remaining time
-  - Progress indicators with visual milestones
-  - Flexible extension options if fermentation needs more time
-  - Early completion tracking for faster-than-expected batches
+  - **Kefir (Milk)**: 12-24 hours, 68-76°F, milk kefir grains
+  - **Water Kefir**: 1-3 days, 68-76°F, water kefir grains
+
+## 🚧 In Progress / Planned Features
+
+### User Management
+- **Session management**: Persistent sessions with tower-sessions and "remember me" functionality
+- **User logout**: Clean session termination with proper security cleanup
+- **User Administration**: Administrative interface for managing users, viewing system statistics, and maintaining fermentation profile templates
+
+### Fermentation Logging
+- **Create new fermentation**: Start tracking a new batch with metadata including ingredients and initial conditions
+- **Add temperature data points**: Manual temperature logging for tracking fermentation progress
+- **Display temperature graphs**: Interactive charts showing temperature curves over time
+- **Photo uploads**: Document fermentation stages visually
+- **Finish fermentation**: Mark batches as complete with success ratings, taste profiles, and lessons learned
+- **Browse historical fermentations**: Search and filter past fermentations by type, date range, success rating, or ingredients
+- **Countdown timer**: Daily countdown display with progress indicators and flexible completion tracking
 
 # Technology
 Raugupati Log follows the following architectural principles:
@@ -107,3 +117,87 @@ Raugupati Log follows the following architectural principles:
   - Fast initial page loads without JavaScript dependency
   - Screen reader compatibility and keyboard navigation support
   - Semantic HTML structure with proper ARIA labels for fermentation data
+
+# Getting Started
+
+## Prerequisites
+- Rust 1.75 or later
+- Docker (optional, for containerized deployment)
+- Git
+
+## Quick Start
+
+### Local Development
+```bash
+# Clone the repository
+git clone https://github.com/CWiesbaum/raugupatis-log.git
+cd raugupatis-log
+
+# Build and run
+cargo build
+cargo run
+
+# Or use the Makefile
+make run
+```
+
+The application will start on `http://localhost:3000`
+
+### Available Commands
+```bash
+make help          # Show all available commands
+make build         # Build the application
+make test          # Run all tests
+make lint          # Run clippy linter
+make format        # Format code with rustfmt
+make dev           # Run with hot-reload (requires cargo-watch)
+```
+
+### Docker Deployment
+```bash
+# Build and run with Docker Compose
+docker-compose up --build
+
+# Or build and run manually
+docker build -t raugupatis-log:latest .
+docker run -p 3000:3000 -v $(pwd)/data:/app/data raugupatis-log:latest
+```
+
+## Testing the Application
+
+### Try the Authentication Flow
+1. Visit `http://localhost:3000`
+2. Click "Register" and create an account
+3. Log in with your credentials
+4. View the dashboard (basic template currently)
+
+### API Testing
+```bash
+# Register a new user
+curl -X POST http://localhost:3000/api/users/register \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"securepass123","experience_level":"beginner"}'
+
+# Login
+curl -X POST http://localhost:3000/api/users/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"test@example.com","password":"securepass123"}'
+
+# Health check
+curl http://localhost:3000/health
+```
+
+## Development Roadmap
+
+See [PROJECT_SETUP.md](PROJECT_SETUP.md) for detailed information about the project structure and development workflow.
+
+## Contributing
+
+This project is in active development. Contributions are welcome! Please ensure:
+- All tests pass: `make test`
+- Code is formatted: `make format`
+- Linter passes: `make lint`
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
