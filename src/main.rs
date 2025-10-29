@@ -1,34 +1,9 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::Html,
-    routing::get,
-    Router,
-};
-use askama::Template;
 use std::sync::Arc;
 use tokio::net::TcpListener;
-use tower::ServiceBuilder;
-use tower_http::{
-    compression::CompressionLayer,
-    cors::CorsLayer,
-    trace::TraceLayer,
-};
-use tracing::{info, warn};
+use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-mod config;
-mod database;
-mod templates;
-
-use config::AppConfig;
-use database::Database;
-
-#[derive(Clone)]
-pub struct AppState {
-    pub db: Arc<Database>,
-    pub config: Arc<AppConfig>,
-}
+use raugupatis_log::{config::AppConfig, database::Database, create_router, AppState};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -55,17 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let app_state = AppState { db, config: config.clone() };
 
-    // Build the application with middleware stack
-    let app = Router::new()
-        .route("/", get(home_handler))
-        .route("/health", get(health_handler))
-        .with_state(app_state)
-        .layer(
-            ServiceBuilder::new()
-                .layer(TraceLayer::new_for_http())
-                .layer(CompressionLayer::new())
-                .layer(CorsLayer::permissive()),
-        );
+    let app = create_router(app_state);
 
     let listener = TcpListener::bind(&config.server_address).await?;
     info!("Server starting on {}", config.server_address);

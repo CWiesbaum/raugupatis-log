@@ -50,6 +50,10 @@ axum-test = "14.0"
 proptest = "1.4"
 tokio-test = "0.4"
 
+[lib]
+name = "raugupatis_log"
+path = "src/lib.rs"
+
 [[bin]]
 name = "raugupatis-log"
 path = "src/main.rs"
