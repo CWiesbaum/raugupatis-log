@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <meta name="description" content="Register for Raugupatis Log - Start tracking your fermentation projects">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .subtitle {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-bottom: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+        input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.25);
+        }
+        select {
+            cursor: pointer;
+        }
+        select option {
+            background: #764ba2;
+            color: white;
+        }
+        .validation-message {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            min-height: 1.2rem;
+        }
+        .validation-message.error {
+            color: #ff6b6b;
+        }
+        .validation-message.success {
+            color: #51cf66;
+        }
+        button {
+            width: 100%;
+            padding: 1rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 1rem;
+        }
+        button[type="submit"] {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+        }
+        button[type="submit"]:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.4);
+        }
+        button[type="submit"]:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.5);
+            cursor: not-allowed;
+        }
+        .back-link {
+            display: inline-block;
+            margin-top: 1rem;
+            color: white;
+            text-decoration: none;
+            font-size: 0.9rem;
+            opacity: 0.8;
+            transition: opacity 0.3s;
+        }
+        .back-link:hover {
+            opacity: 1;
+        }
+        .message {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            text-align: center;
+            font-weight: 500;
+            display: none;
+        }
+        .message.success {
+            background: rgba(81, 207, 102, 0.2);
+            border: 1px solid rgba(81, 207, 102, 0.5);
+            color: #51cf66;
+        }
+        .message.error {
+            background: rgba(255, 107, 107, 0.2);
+            border: 1px solid rgba(255, 107, 107, 0.5);
+            color: #ff6b6b;
+        }
+        .password-requirements {
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            opacity: 0.8;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .emoji {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">🥒</div>
+            <h1>{{ title }}</h1>
+            <p class="subtitle">Create your account to start tracking fermentations</p>
+        </div>
+        
+        <div id="successMessage" class="message success"></div>
+        <div id="errorMessage" class="message error"></div>
+        
+        <form id="registrationForm">
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    placeholder="your.email@example.com"
+                    required
+                    autocomplete="email"
+                >
+                <div id="emailError" class="validation-message error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter a strong password"
+                    required
+                    autocomplete="new-password"
+                >
+                <div class="password-requirements">Must be at least 8 characters long</div>
+                <div id="passwordError" class="validation-message error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password</label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    placeholder="Re-enter your password"
+                    required
+                    autocomplete="new-password"
+                >
+                <div id="confirmPasswordError" class="validation-message error"></div>
+            </div>
+            
+            <div class="form-group">
+                <label for="experienceLevel">Fermentation Experience Level</label>
+                <select id="experienceLevel" name="experienceLevel">
+                    <option value="beginner">Beginner - Just getting started</option>
+                    <option value="intermediate">Intermediate - Some experience</option>
+                    <option value="advanced">Advanced - Experienced fermenter</option>
+                </select>
+            </div>
+            
+            <button type="submit" id="submitButton" disabled>Register</button>
+        </form>
+        
+        <div style="text-align: center;">
+            <a href="/" class="back-link">← Back to Home</a>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('registrationForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const experienceLevelInput = document.getElementById('experienceLevel');
+        const submitButton = document.getElementById('submitButton');
+        
+        const emailError = document.getElementById('emailError');
+        const passwordError = document.getElementById('passwordError');
+        const confirmPasswordError = document.getElementById('confirmPasswordError');
+        const successMessage = document.getElementById('successMessage');
+        const errorMessage = document.getElementById('errorMessage');
+        
+        // Validation state
+        let validationState = {
+            email: false,
+            password: false,
+            confirmPassword: false
+        };
+        
+        // Email validation
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // Update submit button state
+        function updateSubmitButton() {
+            const allValid = validationState.email && 
+                           validationState.password && 
+                           validationState.confirmPassword;
+            submitButton.disabled = !allValid;
+        }
+        
+        // Email input validation
+        emailInput.addEventListener('input', function() {
+            const email = this.value.trim();
+            if (email === '') {
+                emailError.textContent = '';
+                validationState.email = false;
+            } else if (!validateEmail(email)) {
+                emailError.textContent = 'Please enter a valid email address';
+                validationState.email = false;
+            } else {
+                emailError.textContent = '';
+                validationState.email = true;
+            }
+            updateSubmitButton();
+        });
+        
+        // Password input validation
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            if (password === '') {
+                passwordError.textContent = '';
+                validationState.password = false;
+            } else if (password.length < 8) {
+                passwordError.textContent = 'Password must be at least 8 characters long';
+                validationState.password = false;
+            } else {
+                passwordError.textContent = '';
+                validationState.password = true;
+            }
+            
+            // Re-validate confirm password when password changes
+            if (confirmPasswordInput.value !== '') {
+                confirmPasswordInput.dispatchEvent(new Event('input'));
+            }
+            
+            updateSubmitButton();
+        });
+        
+        // Confirm password validation
+        confirmPasswordInput.addEventListener('input', function() {
+            const confirmPassword = this.value;
+            const password = passwordInput.value;
+            
+            if (confirmPassword === '') {
+                confirmPasswordError.textContent = '';
+                validationState.confirmPassword = false;
+            } else if (confirmPassword !== password) {
+                confirmPasswordError.textContent = 'Passwords do not match';
+                validationState.confirmPassword = false;
+            } else {
+                confirmPasswordError.textContent = '';
+                validationState.confirmPassword = true;
+            }
+            updateSubmitButton();
+        });
+        
+        // Form submission
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Hide previous messages
+            successMessage.style.display = 'none';
+            errorMessage.style.display = 'none';
+            
+            // Disable submit button during submission
+            submitButton.disabled = true;
+            submitButton.textContent = 'Registering...';
+            
+            const formData = {
+                email: emailInput.value.trim(),
+                password: passwordInput.value,
+                experience_level: experienceLevelInput.value
+            };
+            
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Success
+                    successMessage.textContent = 'Registration successful! Welcome to Raugupatis Log!';
+                    successMessage.style.display = 'block';
+                    
+                    // Reset form
+                    form.reset();
+                    validationState = { email: false, password: false, confirmPassword: false };
+                    
+                    // Redirect to home after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 2000);
+                } else {
+                    // Error from server
+                    errorMessage.textContent = data.error || 'Registration failed. Please try again.';
+                    errorMessage.style.display = 'block';
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Register';
+                }
+            } catch (error) {
+                // Network or other error
+                errorMessage.textContent = 'An error occurred. Please check your connection and try again.';
+                errorMessage.style.display = 'block';
+                submitButton.disabled = false;
+                submitButton.textContent = 'Register';
+            }
+        });
+    </script>
+</body>
+</html>
