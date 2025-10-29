@@ -241,12 +241,41 @@
             <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
         </div>
         
-        <div class="actions">
-            <a href="/login" class="btn btn-primary">Login</a>
+        <div class="actions" id="authActions">
+            <a href="/login" class="btn btn-primary" id="loginButton">Login</a>
       </div>
-        <div class="cta-section">
+        <div class="cta-section" id="ctaSection">
             <a href="/register" class="btn btn-primary">Register Now</a>
         </div>
+        <div class="actions" id="userActions" style="display: none;">
+            <div style="text-align: center; margin-bottom: 1rem;">
+                <p style="font-size: 1.1rem; margin-bottom: 0.5rem;">Logged in as:</p>
+                <p style="font-size: 1.2rem; font-weight: 600;" id="userEmail"></p>
+            </div>
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            <button class="btn" id="logoutButton" style="background: rgba(244, 67, 54, 0.5); border-color: rgba(244, 67, 54, 0.8);">Logout</button>
+        </div>
     </div>
+    
+    <script>
+        // Check if user is logged in
+        const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+        
+        if (user) {
+            // Hide login and register buttons
+            document.getElementById('authActions').style.display = 'none';
+            document.getElementById('ctaSection').style.display = 'none';
+            
+            // Show user actions
+            document.getElementById('userActions').style.display = 'block';
+            document.getElementById('userEmail').textContent = user.email;
+            
+            // Handle logout
+            document.getElementById('logoutButton').addEventListener('click', function() {
+                sessionStorage.removeItem('user');
+                window.location.reload();
+            });
+        }
+    </script>
 </body>
 </html>
