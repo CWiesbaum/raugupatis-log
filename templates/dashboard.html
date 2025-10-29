@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 800px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .greeting {
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .welcome-card {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .welcome-card h2 {
+            margin-top: 0;
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+        }
+        .welcome-card p {
+            margin: 0.75rem 0;
+            font-size: 1.1rem;
+            line-height: 1.7;
+        }
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .user-info h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .info-item {
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
+        }
+        .info-item strong {
+            font-weight: 600;
+        }
+        .actions {
+            display: grid;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .action-button {
+            display: block;
+            padding: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        .action-button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        .back-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .emoji {
+                font-size: 3rem;
+            }
+            .greeting {
+                font-size: 1.2rem;
+            }
+            .welcome-card h2 {
+                font-size: 1.5rem;
+            }
+            .welcome-card p, .info-item, .action-button {
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">🎉</div>
+            <h1>Dashboard</h1>
+        </div>
+        
+        <p class="greeting" id="greeting">Welcome!</p>
+        
+        <div class="welcome-card">
+            <h2>Welcome to Your Fermentation Hub</h2>
+            <p>
+                You've successfully logged in! This is your personal dashboard where you'll 
+                be able to track all your fermentation projects, monitor temperatures, 
+                log progress, and analyze your results.
+            </p>
+            <p>
+                Stay tuned for more features coming soon!
+            </p>
+        </div>
+        
+        <div class="user-info" id="userInfo" style="display: none;">
+            <h3>Your Profile</h3>
+            <div class="info-item"><strong>Email:</strong> <span id="userEmail"></span></div>
+            <div class="info-item"><strong>Role:</strong> <span id="userRole"></span></div>
+            <div class="info-item"><strong>Experience Level:</strong> <span id="userExperience"></span></div>
+        </div>
+        
+        <div class="actions">
+            <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Start New Fermentation</a>
+            <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">View My Fermentations</a>
+            <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Browse Recipes</a>
+        </div>
+        
+        <div class="back-link">
+            <a href="/">&larr; Back to Home</a>
+        </div>
+    </div>
+
+    <script>
+        // Load user info from session storage
+        const userJson = sessionStorage.getItem('user');
+        if (userJson) {
+            try {
+                const user = JSON.parse(userJson);
+                
+                // Update greeting
+                const greeting = document.getElementById('greeting');
+                if (user.email) {
+                    greeting.textContent = `Welcome, ${user.email}!`;
+                }
+                
+                // Show and populate user info
+                const userInfo = document.getElementById('userInfo');
+                userInfo.style.display = 'block';
+                
+                document.getElementById('userEmail').textContent = user.email || 'N/A';
+                document.getElementById('userRole').textContent = user.role || 'user';
+                document.getElementById('userExperience').textContent = user.experience_level || 'beginner';
+            } catch (error) {
+                console.error('Error parsing user data:', error);
+            }
+        }
+    </script>
+</body>
+</html>

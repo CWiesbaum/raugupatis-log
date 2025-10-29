@@ -6,7 +6,8 @@ use axum::{
 };
 use serde_json::json;
 
-use crate::models::{CreateUserRequest, UserResponse};
+use crate::auth::verify_password;
+use crate::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse};
 use crate::repository::UserRepository;
 use crate::AppState;
 
@@ -99,6 +100,58 @@ fn is_valid_email(email: &str) -> bool {
     // Check domain has valid structure (at least "x.x" format)
     let domain_parts: Vec<&str> = domain.split('.').collect();
     domain_parts.len() >= 2 && domain_parts.iter().all(|part| !part.is_empty())
+}
+
+pub async fn login_user(
+    State(state): State<AppState>,
+    Json(request): Json<LoginRequest>,
+) -> Result<Json<LoginResponse>, ApiError> {
+    // Validate email format
+    if !is_valid_email(&request.email) {
+        return Ok(Json(LoginResponse {
+            success: false,
+            user: None,
+            message: "Invalid email format".to_string(),
+        }));
+    }
+
+    let user_repo = UserRepository::new(state.db.clone());
+
+    // Find user by email
+    let user = match user_repo.find_by_email(&request.email).await {
+        Ok(Some(user)) => user,
+        Ok(None) => {
+            return Ok(Json(LoginResponse {
+                success: false,
+                user: None,
+                message: "Invalid email or password".to_string(),
+            }));
+        }
+        Err(e) => {
+            return Err(ApiError::DatabaseError(format!(
+                "Failed to find user: {}",
+                e
+            )));
+        }
+    };
+
+    // Verify password
+    match verify_password(&request.password, &user.password_hash) {
+        Ok(true) => Ok(Json(LoginResponse {
+            success: true,
+            user: Some(UserResponse::from(user)),
+            message: "Login successful".to_string(),
+        })),
+        Ok(false) => Ok(Json(LoginResponse {
+            success: false,
+            user: None,
+            message: "Invalid email or password".to_string(),
+        })),
+        Err(e) => Err(ApiError::InternalError(format!(
+            "Failed to verify password: {}",
+            e
+        ))),
+    }
 }
 
 #[cfg(test)]

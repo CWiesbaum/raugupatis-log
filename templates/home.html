@@ -103,6 +103,44 @@
             margin: 0.25rem 0;
         }
         
+        .actions {
+            margin-top: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.875rem 2rem;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            text-decoration: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.8);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-primary {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+        }
+        
+        .btn-primary:hover {
+            background: rgba(76, 175, 80, 0.7);
+            border-color: rgba(76, 175, 80, 1);
+        }
+        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -128,6 +166,13 @@
             }
             .about p, .features li {
                 font-size: 1rem;
+            }
+            .actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
             }
         }
     </style>
@@ -171,6 +216,10 @@
         <div class="status">
             <div class="status-item"><strong>Status:</strong> ✅ Server is running successfully!</div>
             <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
+        </div>
+        
+        <div class="actions">
+            <a href="/login" class="btn btn-primary">Login</a>
         </div>
     </div>
 </body>
