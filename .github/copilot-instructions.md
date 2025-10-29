@@ -17,10 +17,40 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 - **Deployment**: OCI containers with devcontainer development
 
 ### Key Design Principles
+- **Domain-driven structure** - Code organized by feature domain (users, fermentation, etc.) for high cohesion and low coupling
 - **Simple monolithic architecture** over microservices complexity
 - **Server-side rendering first** - SEO optimized, accessible HTML with progressive enhancement
 - **Compile-time safety** - leverage Rust's type system and Askama's template validation
 - **Mobile-first responsive design** with device-specific optimizations
+
+### Project Structure
+The project follows a domain-based architecture:
+```
+src/
+├── users/           # User management domain
+│   ├── auth.rs      # Password hashing/verification
+│   ├── handlers.rs  # User API handlers
+│   ├── models.rs    # User models and DTOs
+│   ├── repository.rs # User database operations
+│   └── templates.rs # User template handlers
+├── config.rs        # Configuration management
+├── database.rs      # Database connection
+├── templates.rs     # General template handlers
+└── lib.rs          # Main library entry point
+
+templates/
+├── users/          # User domain templates
+│   ├── login.html
+│   └── register.html
+├── home.html
+└── dashboard.html
+```
+
+When adding new features:
+- Create a new domain module (e.g., `src/fermentation/`) for cohesive feature sets
+- Include all related code (models, handlers, repository, templates) in the domain module
+- Keep domain modules isolated to reduce coupling
+- Follow the pattern established by the `users` module
 
 ## Development Environment Setup
 - Use the devcontainer configuration for consistent development environment

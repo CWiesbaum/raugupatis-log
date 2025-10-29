@@ -49,6 +49,13 @@ Raugupati Log follows the following architectural principles:
 - **Development in devcontainer**: Fully containerized development environment using Docker with VS Code integration. Includes all necessary tools, dependencies, and extensions pre-configured for immediate productivity. Ensures consistent development experience across different machines and operating systems.
 
 ## Architecture Philosophy
+- **Domain-driven structure**: Code organized by feature domain (users, fermentation, etc.) rather than by technical layers. This approach follows the coupling and cohesion principles, resulting in:
+  - **High cohesion**: Related code (models, handlers, repositories, templates) grouped together in domain modules
+  - **Low coupling**: Domains are isolated with clear boundaries, reducing dependencies between features
+  - **Better maintainability**: Easier to find and modify related code
+  - **Reduced merge conflicts**: Changes to one domain don't affect others
+  - **Scalability**: New domains can be added following the same pattern
+
 - **Simple architecture approach**: Monolithic application design prioritizing maintainability and ease of deployment over complex microservices. Clear separation of concerns with well-defined layers (presentation, business logic, data access) while avoiding over-engineering for the application scale.
 
 ## Deployment & Runtime
