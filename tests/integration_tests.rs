@@ -10,14 +10,19 @@ use tower::ServiceExt;
 
 async fn create_test_app() -> Router {
     let app_state = create_test_app_state().await;
-    raugupatis_log::create_router(app_state)
+    raugupatis_log::create_router(app_state).await
 }
 
 async fn create_test_app_state() -> AppState {
-    // Create a test database in memory or temporary location
+    // Create a test database with a unique temporary file
+    let test_db_path = format!("/tmp/test_raugupatis_{}.db", std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos());
+    
     let config = Arc::new(AppConfig {
         server_address: "0.0.0.0:3000".to_string(),
-        database_url: "sqlite::memory:".to_string(),
+        database_url: test_db_path,
         environment: "test".to_string(),
         session_secret: "test-secret".to_string(),
     });
@@ -98,7 +103,7 @@ async fn test_register_user_duplicate_email() {
     });
 
     // First registration should succeed
-    let app1 = raugupatis_log::create_router(app_state.clone());
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
     let response = app1
         .oneshot(
             Request::builder()
@@ -114,7 +119,7 @@ async fn test_register_user_duplicate_email() {
     assert_eq!(response.status(), StatusCode::CREATED);
 
     // Second registration with same email should fail with conflict
-    let app2 = raugupatis_log::create_router(app_state);
+    let app2 = raugupatis_log::create_router(app_state).await;
     let response = app2
         .oneshot(
             Request::builder()
@@ -187,7 +192,7 @@ async fn test_login_success() {
         "password": "securepassword123"
     });
 
-    let app1 = raugupatis_log::create_router(app_state.clone());
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
     let response = app1
         .oneshot(
             Request::builder()
@@ -208,7 +213,7 @@ async fn test_login_success() {
         "password": "securepassword123"
     });
 
-    let app2 = raugupatis_log::create_router(app_state);
+    let app2 = raugupatis_log::create_router(app_state).await;
     let response = app2
         .oneshot(
             Request::builder()
@@ -243,7 +248,7 @@ async fn test_login_wrong_password() {
         "password": "correctpassword123"
     });
 
-    let app1 = raugupatis_log::create_router(app_state.clone());
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
     let response = app1
         .oneshot(
             Request::builder()
@@ -264,7 +269,7 @@ async fn test_login_wrong_password() {
         "password": "wrongpassword123"
     });
 
-    let app2 = raugupatis_log::create_router(app_state);
+    let app2 = raugupatis_log::create_router(app_state).await;
     let response = app2
         .oneshot(
             Request::builder()
@@ -385,5 +390,81 @@ async fn test_dashboard_page_loads() {
         .await
         .unwrap();
 
+    // Dashboard should redirect to login when not authenticated
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn test_logout() {
+    let app_state = create_test_app_state().await;
+    
+    // First register a user
+    let register_body = json!({
+        "email": "logouttest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "logouttest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
     assert_eq!(response.status(), StatusCode::OK);
+    
+    // Extract session cookie
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some(), "Login should set a session cookie");
+
+    // Logout
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/logout")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["message"], "Logout successful");
 }

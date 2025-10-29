@@ -223,8 +223,20 @@
         // Handle logout
         const logoutButton = document.getElementById('logoutButton');
         if (logoutButton) {
-            logoutButton.addEventListener('click', () => {
-                // Clear session storage
+            logoutButton.addEventListener('click', async () => {
+                try {
+                    // Call server logout endpoint
+                    await fetch('/api/users/logout', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (error) {
+                    console.error('Error during logout:', error);
+                }
+                
+                // Clear client-side session storage
                 sessionStorage.removeItem('user');
                 
                 // Redirect to home page

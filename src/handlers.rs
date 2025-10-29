@@ -5,9 +5,10 @@ use axum::{
     Json,
 };
 use serde_json::json;
+use tower_sessions::Session;
 
 use crate::auth::verify_password;
-use crate::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse};
+use crate::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse, UserSession};
 use crate::repository::UserRepository;
 use crate::AppState;
 
@@ -80,6 +81,20 @@ pub async fn register_user(
     Ok((StatusCode::CREATED, Json(UserResponse::from(user))))
 }
 
+pub async fn logout_user(
+    session: Session,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    // Clear the session
+    session.flush()
+        .await
+        .map_err(|e| ApiError::InternalError(format!("Failed to clear session: {}", e)))?;
+    
+    Ok(Json(json!({
+        "success": true,
+        "message": "Logout successful"
+    })))
+}
+
 fn is_valid_email(email: &str) -> bool {
     // Basic email validation per RFC 5322 simplified rules
     // Must have exactly one @ separating local and domain parts
@@ -103,6 +118,7 @@ fn is_valid_email(email: &str) -> bool {
 }
 
 pub async fn login_user(
+    session: Session,
     State(state): State<AppState>,
     Json(request): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, ApiError> {
@@ -137,11 +153,25 @@ pub async fn login_user(
 
     // Verify password
     match verify_password(&request.password, &user.password_hash) {
-        Ok(true) => Ok(Json(LoginResponse {
-            success: true,
-            user: Some(UserResponse::from(user)),
-            message: "Login successful".to_string(),
-        })),
+        Ok(true) => {
+            // Create server-side session
+            let user_session = UserSession {
+                user_id: user.id,
+                email: user.email.clone(),
+                role: user.role.clone(),
+            };
+            
+            // Store session data
+            session.insert("user", user_session)
+                .await
+                .map_err(|e| ApiError::InternalError(format!("Failed to create session: {}", e)))?;
+            
+            Ok(Json(LoginResponse {
+                success: true,
+                user: Some(UserResponse::from(user)),
+                message: "Login successful".to_string(),
+            }))
+        },
         Ok(false) => Ok(Json(LoginResponse {
             success: false,
             user: None,

@@ -108,3 +108,10 @@ pub struct LoginResponse {
     pub user: Option<UserResponse>,
     pub message: String,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UserSession {
+    pub user_id: i64,
+    pub email: String,
+    pub role: UserRole,
+}

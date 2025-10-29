@@ -8,7 +8,10 @@ use tower_http::{
     cors::CorsLayer,
     trace::TraceLayer,
 };
+use tower_sessions::{SessionManagerLayer, Expiry};
+use tower_sessions_rusqlite_store::{RusqliteStore, tokio_rusqlite};
 use std::sync::Arc;
+use time::Duration;
 
 pub mod auth;
 pub mod config;
@@ -20,7 +23,7 @@ pub mod templates;
 
 pub use config::AppConfig;
 pub use database::Database;
-use handlers::{login_user, register_user};
+use handlers::{login_user, register_user, logout_user};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -28,7 +31,20 @@ pub struct AppState {
     pub config: Arc<AppConfig>,
 }
 
-pub fn create_router(app_state: AppState) -> Router {
+pub async fn create_router(app_state: AppState) -> Router {
+    // Create tokio-rusqlite connection for session store
+    let db_path = app_state.db.get_db_path().to_string();
+    let session_conn = tokio_rusqlite::Connection::open(db_path)
+        .await
+        .expect("Failed to open database for session store");
+    
+    // Create session store using tokio-rusqlite connection
+    let session_store = RusqliteStore::new(session_conn);
+    
+    // Create session layer with 24 hour expiration
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_expiry(Expiry::OnInactivity(Duration::hours(24)));
+
     Router::new()
         .route("/", get(crate::templates::home_handler))
         .route("/register", get(crate::templates::register_handler))
@@ -37,10 +53,12 @@ pub fn create_router(app_state: AppState) -> Router {
         .route("/dashboard", get(crate::templates::dashboard_handler))
         .route("/api/users/register", post(register_user))
         .route("/api/users/login", post(login_user))
+        .route("/api/users/logout", post(logout_user))
         .with_state(app_state)
         .layer(
             ServiceBuilder::new()
                 .layer(TraceLayer::new_for_http())
+                .layer(session_layer)
                 .layer(CompressionLayer::new())
                 .layer(CorsLayer::permissive()),
         )

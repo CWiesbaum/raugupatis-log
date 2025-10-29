@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     let app_state = AppState { db, config: config.clone() };
 
-    let app = create_router(app_state);
+    let app = create_router(app_state).await;
 
     let listener = TcpListener::bind(&config.server_address).await?;
     info!("Server starting on {}", config.server_address);
