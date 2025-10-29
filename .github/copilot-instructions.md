@@ -42,18 +42,20 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 
 ## Authentication & Session Management
 
-### Current Implementation (Phase 1)
+### Current Implementation
 - **User registration**: Argon2 password hashing, email validation, experience level tracking
-- **User login**: Email/password verification with secure comparison
+- **User login**: Server-side session management using tower-sessions with SQLite persistence
+- **User logout**: Server-side session destruction with proper cleanup
+- **Protected routes**: Session validation with redirect to login when not authenticated
 - **Database repository pattern**: UserRepository for clean data access layer
-- **API endpoints**: `/api/users/register` and `/api/users/login`
+- **API endpoints**: `/api/users/register`, `/api/users/login`, `/api/users/logout`
 
-### Next Steps: Session Management (Phase 2)
+### Authentication Flow Implementation
 ```rust
-// TODO: Implement tower-sessions with SQLite backend for session persistence
-// Password hashing with argon2 crate (OWASP recommended) - DONE
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier}; // Already implemented
-use tower_sessions::{Session, SessionManagerLayer}; // Dependency added, not yet used
+// Using tower-sessions with SQLite backend for session persistence
+// Password hashing with argon2 crate (OWASP recommended)
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use tower_sessions::{Session, SessionManagerLayer};
 
 // Session structure to implement
 #[derive(Serialize, Deserialize)]
@@ -61,21 +63,21 @@ struct UserSession {
     user_id: i64,
     email: String,
     role: UserRole,
-    remember_me: bool,
 }
 ```
 
-### Target Middleware Stack (Order Matters)
-1. **TraceLayer** - Request logging and tracing ✅ (implemented)
-2. **SessionManagerLayer** - Session handling before auth (TODO)
-3. **AuthLayer** - Custom auth middleware checking sessions (TODO)
-4. **CorsLayer** - CORS handling for API endpoints ✅ (implemented)
-5. **CompressionLayer** - Response compression ✅ (implemented)
+### Middleware Stack (Order Matters)
+1. **TraceLayer** - Request logging and tracing ✅
+2. **SessionManagerLayer** - Session handling before auth ✅
+3. **CompressionLayer** - Response compression ✅
+4. **CorsLayer** - CORS handling for API endpoints ✅
 
-### Authorization Patterns (To Implement)
-- Use `RequireAuthorizationLayer` for protected routes (dashboard, fermentation endpoints)
-- Implement role-based access with custom extractors (admin vs. user)
-- Session expiry: 24h normal, 30 days for "remember me"
+### Authorization Patterns
+- Protected routes check for valid session using `Session` extractor ✅
+- Dashboard redirects to login when session is missing ✅
+- Session expiry: 24h inactivity timeout ✅
+- Role-based access with custom extractors (admin vs. user) - To implement
+- Extended session duration for "remember me" - To implement
 
 ### Fermentation Tracking
 - **Flexible timing**: Support both date ranges (min-max days) and exact durations

@@ -1,5 +1,7 @@
 use askama::Template;
-use axum::response::Html;
+use axum::response::{Html, Redirect};
+use tower_sessions::Session;
+use crate::models::UserSession;
 
 #[derive(Template)]
 #[template(path = "home.html")]
@@ -38,15 +40,24 @@ pub struct DashboardTemplate {
     pub user_email: String,
 }
 
-pub async fn dashboard_handler() -> Html<String> {
-    // For now, just show a generic dashboard
-    // In the future, this will get the user from session
-    let template = DashboardTemplate {
-        title: "Dashboard - Raugupatis Log".to_string(),
-        user_email: "User".to_string(),
-    };
+pub async fn dashboard_handler(session: Session) -> Result<Html<String>, Redirect> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .unwrap_or(None);
     
-    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+    if let Some(user) = user_session {
+        let template = DashboardTemplate {
+            title: "Dashboard - Raugupatis Log".to_string(),
+            user_email: user.email,
+        };
+        
+        Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
+    } else {
+        // Redirect to login if not authenticated
+        Err(Redirect::to("/login"))
+    }
 }
 
 #[derive(Template)]

@@ -5,6 +5,7 @@ use tokio::task;
 
 pub struct Database {
     connection: Mutex<Connection>,
+    db_path: String,
 }
 
 impl Database {
@@ -16,22 +17,26 @@ impl Database {
             tokio::fs::create_dir_all(parent).await?;
         }
 
+        let db_path_clone = db_path.clone();
         let connection = task::spawn_blocking(move || -> Result<Connection, Box<dyn std::error::Error + Send + Sync>> {
-            let conn = Connection::open(&db_path)?;
+            let conn = Connection::open(&db_path_clone)?;
             Ok(conn)
         }).await??;
 
         Ok(Database {
             connection: Mutex::new(connection),
+            db_path,
         })
     }
 
     pub async fn migrate(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // Read migration file
-        let migration_sql = include_str!("../migrations/001_initial_schema.sql");
+        // Read migration files
+        let migration_sql_001 = include_str!("../migrations/001_initial_schema.sql");
+        let migration_sql_002 = include_str!("../migrations/002_add_sessions_table.sql");
         
         let migrations = Migrations::new(vec![
-            M::up(migration_sql),
+            M::up(migration_sql_001),
+            M::up(migration_sql_002),
         ]);
 
         // Apply migrations - need to move the migrations into the closure
@@ -50,5 +55,9 @@ impl Database {
 
     pub fn get_connection(&self) -> &Mutex<Connection> {
         &self.connection
+    }
+    
+    pub fn get_db_path(&self) -> &str {
+        &self.db_path
     }
 }
