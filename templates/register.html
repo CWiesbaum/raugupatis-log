@@ -223,15 +223,6 @@
                 <div id="confirmPasswordError" class="validation-message error"></div>
             </div>
             
-            <div class="form-group">
-                <label for="experienceLevel">Fermentation Experience Level</label>
-                <select id="experienceLevel" name="experienceLevel">
-                    <option value="beginner">Beginner - Just getting started</option>
-                    <option value="intermediate">Intermediate - Some experience</option>
-                    <option value="advanced">Advanced - Experienced fermenter</option>
-                </select>
-            </div>
-            
             <button type="submit" id="submitButton" disabled>Register</button>
         </form>
         
@@ -245,7 +236,6 @@
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('confirmPassword');
-        const experienceLevelInput = document.getElementById('experienceLevel');
         const submitButton = document.getElementById('submitButton');
         
         const emailError = document.getElementById('emailError');
@@ -345,8 +335,7 @@
             
             const formData = {
                 email: emailInput.value.trim(),
-                password: passwordInput.value,
-                experience_level: experienceLevelInput.value
+                password: passwordInput.value
             };
             
             try {
