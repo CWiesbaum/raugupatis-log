@@ -263,7 +263,7 @@
             const email = emailInput.value.trim();
             const isValid = email && isValidEmail(email);
             
-            if (!isValid && email) {
+            if (email && !isValid) {
                 emailInput.classList.add('invalid');
                 document.getElementById('emailError').classList.add('show');
             } else {
@@ -276,9 +276,9 @@
 
         function validatePassword() {
             const password = passwordInput.value;
-            const isValid = isValidPassword(password);
+            const isValid = password && isValidPassword(password);
             
-            if (!isValid && password) {
+            if (password && !isValid) {
                 passwordInput.classList.add('invalid');
                 document.getElementById('passwordError').classList.add('show');
             } else {
@@ -290,10 +290,10 @@
         }
 
         function validateConfirmPassword() {
-            const isValid = passwordsMatch();
             const confirmPassword = confirmPasswordInput.value;
+            const isValid = confirmPassword && passwordsMatch();
             
-            if (!isValid && confirmPassword) {
+            if (confirmPassword && !isValid) {
                 confirmPasswordInput.classList.add('invalid');
                 document.getElementById('confirmPasswordError').classList.add('show');
             } else {
