@@ -173,7 +173,6 @@
             <h3>Your Profile</h3>
             <div class="info-item"><strong>Email:</strong> <span id="userEmail"></span></div>
             <div class="info-item"><strong>Role:</strong> <span id="userRole"></span></div>
-            <div class="info-item"><strong>Experience Level:</strong> <span id="userExperience"></span></div>
         </div>
         
         <div class="actions">
@@ -206,7 +205,6 @@
                 
                 document.getElementById('userEmail').textContent = user.email || 'N/A';
                 document.getElementById('userRole').textContent = user.role || 'user';
-                document.getElementById('userExperience').textContent = user.experience_level || 'beginner';
             } catch (error) {
                 console.error('Error parsing user data:', error);
             }
