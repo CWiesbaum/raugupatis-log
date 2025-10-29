@@ -103,6 +103,34 @@
             margin: 0.25rem 0;
         }
         
+        .cta-section {
+            margin-top: 2rem;
+            text-align: center;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            margin: 0.5rem;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #51cf66 0%, #37b24d 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(81, 207, 102, 0.3);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(81, 207, 102, 0.4);
+        }
+        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -171,6 +199,10 @@
         <div class="status">
             <div class="status-item"><strong>Status:</strong> ✅ Server is running successfully!</div>
             <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
+        </div>
+        
+        <div class="cta-section">
+            <a href="/register" class="btn btn-primary">Register Now</a>
         </div>
     </div>
 </body>
