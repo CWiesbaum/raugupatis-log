@@ -31,6 +31,7 @@ pub struct AppState {
 pub fn create_router(app_state: AppState) -> Router {
     Router::new()
         .route("/", get(crate::templates::home_handler))
+        .route("/register", get(crate::templates::register_handler))
         .route("/health", get(health_handler))
         .route("/login", get(crate::templates::login_handler))
         .route("/dashboard", get(crate::templates::dashboard_handler))
