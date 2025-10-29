@@ -113,6 +113,6 @@ fn parse_datetime(s: String) -> DateTime<Utc> {
     // Format: YYYY-MM-DD HH:MM:SS
     chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S")
         .ok()
-        .and_then(|dt| dt.and_utc().into())
+        .map(|dt| dt.and_utc())
         .unwrap_or_else(Utc::now)
 }

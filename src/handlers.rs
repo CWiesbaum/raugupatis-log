@@ -80,8 +80,8 @@ pub async fn register_user(
 }
 
 fn is_valid_email(email: &str) -> bool {
-    // Basic email validation - must have @ and at least one char before and after
-    // and should have a dot in the domain part
+    // Basic email validation per RFC 5322 simplified rules
+    // Must have exactly one @ separating local and domain parts
     let parts: Vec<&str> = email.split('@').collect();
     if parts.len() != 2 {
         return false;
@@ -90,7 +90,15 @@ fn is_valid_email(email: &str) -> bool {
     let local = parts[0];
     let domain = parts[1];
     
-    !local.is_empty() && domain.contains('.') && domain.len() >= 3
+    // Local part must not be empty and domain must have at least one dot
+    // Domain must have characters before and after the dot
+    if local.is_empty() || !domain.contains('.') {
+        return false;
+    }
+    
+    // Check domain has valid structure (at least "x.x" format)
+    let domain_parts: Vec<&str> = domain.split('.').collect();
+    domain_parts.len() >= 2 && domain_parts.iter().all(|part| !part.is_empty())
 }
 
 #[cfg(test)]

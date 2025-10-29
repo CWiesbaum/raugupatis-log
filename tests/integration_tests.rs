@@ -9,6 +9,11 @@ use std::sync::Arc;
 use tower::ServiceExt;
 
 async fn create_test_app() -> Router {
+    let app_state = create_test_app_state().await;
+    raugupatis_log::create_router(app_state)
+}
+
+async fn create_test_app_state() -> AppState {
     // Create a test database in memory or temporary location
     let config = Arc::new(AppConfig {
         server_address: "0.0.0.0:3000".to_string(),
@@ -20,12 +25,10 @@ async fn create_test_app() -> Router {
     let db = Arc::new(Database::new(&config.database_url).await.unwrap());
     db.migrate().await.unwrap();
 
-    let app_state = AppState {
+    AppState {
         db,
         config: config.clone(),
-    };
-
-    raugupatis_log::create_router(app_state)
+    }
 }
 
 #[tokio::test]
@@ -86,16 +89,17 @@ async fn test_register_user_success() {
 
 #[tokio::test]
 async fn test_register_user_duplicate_email() {
-    let app = create_test_app().await;
-
+    // Use shared app state for both requests to test duplicate detection
+    let app_state = create_test_app_state().await;
+    
     let request_body = json!({
         "email": "duplicate@example.com",
         "password": "securepassword123"
     });
 
     // First registration should succeed
-    let response = app
-        .clone()
+    let app1 = raugupatis_log::create_router(app_state.clone());
+    let response = app1
         .oneshot(
             Request::builder()
                 .uri("/api/users/register")
@@ -109,8 +113,9 @@ async fn test_register_user_duplicate_email() {
 
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Second registration should fail with conflict
-    let response = app
+    // Second registration with same email should fail with conflict
+    let app2 = raugupatis_log::create_router(app_state);
+    let response = app2
         .oneshot(
             Request::builder()
                 .uri("/api/users/register")
