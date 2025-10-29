@@ -57,7 +57,7 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use tower_sessions::{Session, SessionManagerLayer};
 
-// Session structure
+// Session structure to implement
 #[derive(Serialize, Deserialize)]
 struct UserSession {
     user_id: i64,
