@@ -7,9 +7,10 @@ Named after the Baltic deity of fermentation and pickles, Raugupatis Log brings 
 The following functionality is supported by **Raugupatis Log**
 
 ## User Management
-- **User registration**: New users can create accounts with secure password hashing and email validation. Registration includes basic profile setup with fermentation experience level and preferred fermentation types.
-- **User login**: Secure authentication system with session management and optional "remember me" functionality for convenient access across devices.
-- **User logout**: Clean session termination with proper security cleanup and optional logout from all devices.
+- **User registration**: New users can create accounts with secure Argon2 password hashing and email validation. Registration includes basic profile setup with fermentation experience level selection.
+- **User login**: Secure authentication system with server-side session management using tower-sessions with SQLite persistence. Sessions expire after 24 hours of inactivity. HttpOnly session cookies prevent client-side tampering.
+- **User logout**: Clean session termination with server-side session destruction and proper security cleanup. Client-side session storage is cleared to ensure complete logout.
+- **Protected Routes**: Dashboard and other authenticated pages validate server-side sessions and redirect to login when not authenticated, preventing unauthorized access.
 - **User Administration (via Admin role)**: Administrative interface for managing users, viewing system statistics, moderating shared fermentation logs, and maintaining fermentation profile templates.
 
 ## Fermentation Logging
@@ -63,8 +64,9 @@ Raugupati Log follows the following architectural principles:
   - **Database integration**: rusqlite for type-safe SQLite operations with zero-copy optimizations
   - **Template engines**: Askama for compile-time HTML template validation
   - **Serialization**: serde for efficient JSON/form data processing
-  - **Authentication**: Tower middleware for secure session management
-  - **Testing**: Built-in unit testing, integration testing, and property-based testing support
+  - **Authentication**: tower-sessions with tower-sessions-rusqlite-store for secure server-side session management with SQLite persistence
+  - **Security**: argon2 for OWASP-recommended password hashing
+  - **Testing**: Built-in unit testing, integration testing with axum-test, and property-based testing support
 
 - **Developer Experience**: Modern tooling enhancing productivity:
   - Cargo package manager with dependency resolution and build automation
