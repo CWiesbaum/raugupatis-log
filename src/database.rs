@@ -1,4 +1,5 @@
 use rusqlite::Connection;
+use rusqlite_migration::{Migrations, M};
 use std::sync::Mutex;
 use tokio::task;
 
@@ -26,22 +27,28 @@ impl Database {
     }
 
     pub async fn migrate(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        // For now, we'll skip the actual migration and just ensure the database file exists
-        // In a proper implementation, this would run the migrations using rusqlite_migration
-        task::spawn_blocking(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            // Placeholder for migration logic - would implement actual migrations here
-            Ok(())
-        }).await??;
+        // Read migration file
+        let migration_sql = include_str!("../migrations/001_initial_schema.sql");
+        
+        let migrations = Migrations::new(vec![
+            M::up(migration_sql),
+        ]);
+
+        // Apply migrations - need to move the migrations into the closure
+        let mut conn = self.connection.lock().unwrap();
+        migrations.to_latest(&mut conn)?;
 
         Ok(())
     }
 
     pub async fn health_check(&self) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        task::spawn_blocking(|| -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            // Simple health check - in a real implementation, would test database connectivity
-            Ok(())
-        }).await??;
-
+        let conn = self.connection.lock().unwrap();
+        // Simple health check - verify we can query the database
+        let _result: i32 = conn.query_row("SELECT 1", [], |row| row.get(0))?;
         Ok(())
+    }
+
+    pub fn get_connection(&self) -> &Mutex<Connection> {
+        &self.connection
     }
 }
