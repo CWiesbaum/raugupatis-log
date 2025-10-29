@@ -3,6 +3,11 @@
 ## Project Overview
 Raugupatis Log is a fermentation tracking application built with Rust, featuring server-side rendering with Axum + Askama templates and SQLite for data persistence. Named after the Baltic deity of fermentation, it helps users monitor and optimize their fermentation processes through precise data logging and visualization.
 
+### Current Implementation Status
+- **Phase 1 (Complete)**: Basic authentication, user registration/login, database schema, testing infrastructure
+- **Phase 2 (In Progress)**: Session management, protected routes, fermentation CRUD operations
+- **Phase 3 (Planned)**: Temperature logging with charts, photo uploads, dashboard analytics
+
 ## Architecture & Technology Stack
 
 ### Core Stack
@@ -37,9 +42,17 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 
 ## Authentication & Session Management
 
+### Current Implementation
+- **User registration**: Argon2 password hashing, email validation, experience level tracking
+- **User login**: Server-side session management using tower-sessions with SQLite persistence
+- **User logout**: Server-side session destruction with proper cleanup
+- **Protected routes**: Session validation with redirect to login when not authenticated
+- **Database repository pattern**: UserRepository for clean data access layer
+- **API endpoints**: `/api/users/register`, `/api/users/login`, `/api/users/logout`
+
 ### Authentication Flow Implementation
 ```rust
-// Use tower-sessions with SQLite backend for session persistence
+// Using tower-sessions with SQLite backend for session persistence
 // Password hashing with argon2 crate (OWASP recommended)
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use tower_sessions::{Session, SessionManagerLayer};
@@ -50,21 +63,21 @@ struct UserSession {
     user_id: i64,
     email: String,
     role: UserRole,
-    remember_me: bool,
 }
 ```
 
 ### Middleware Stack (Order Matters)
-1. **TraceLayer** - Request logging and tracing
-2. **SessionManagerLayer** - Session handling before auth
-3. **AuthLayer** - Custom auth middleware checking sessions
-4. **CorsLayer** - CORS handling for API endpoints
-5. **CompressionLayer** - Response compression
+1. **TraceLayer** - Request logging and tracing ✅
+2. **SessionManagerLayer** - Session handling before auth ✅
+3. **CompressionLayer** - Response compression ✅
+4. **CorsLayer** - CORS handling for API endpoints ✅
 
 ### Authorization Patterns
-- Use `RequireAuthorizationLayer` for protected routes
-- Implement role-based access with custom extractors
-- Session expiry: 24h normal, 30 days for "remember me"
+- Protected routes check for valid session using `Session` extractor ✅
+- Dashboard redirects to login when session is missing ✅
+- Session expiry: 24h inactivity timeout ✅
+- Role-based access with custom extractors (admin vs. user) - To implement
+- Extended session duration for "remember me" - To implement
 
 ### Fermentation Tracking
 - **Flexible timing**: Support both date ranges (min-max days) and exact durations
@@ -217,3 +230,5 @@ docker run -p 3000:3000 -v ./data:/app/data raugupatis-log:latest
 6. Add integration tests covering the full HTTP request cycle
 7. Ensure mobile-responsive design and accessibility in templates
 8. Update API documentation and add logging/tracing as needed
+9. Ensure that README.md, PROJECT_SETUP.md and relevant docs are updated with new feature details
+10. Ensure that copilot-instructions.md reflects any architectural or design changes

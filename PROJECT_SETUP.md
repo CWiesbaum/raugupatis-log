@@ -1,4 +1,21 @@
-# Raugupatis Log - Project Setup Complete! 🥒
+# Raugupatis Log - Project Setup & Status 🥒
+
+## Current Development Phase
+
+**Phase 1: Foundation & Authentication** ✅ **COMPLETE**
+- User registration and login working
+- Database schema implemented
+- Testing infrastructure in place
+
+**Phase 2: Session Management & Fermentation Tracking** 🚧 **IN PROGRESS**
+- Session management implementation needed
+- Fermentation CRUD operations to be built
+- Protected routes to be added
+
+**Phase 3: Advanced Features** 📋 **PLANNED**
+- Temperature logging and charts
+- Photo upload functionality
+- Dashboard analytics
 
 ## Project Structure Created
 
@@ -37,26 +54,47 @@ raugupatis-log/
 ### Web Server
 - **Axum-based async web server** running on port 3000
 - **Home page** at `http://localhost:3000` with beautiful gradient styling
+- **Registration page** at `http://localhost:3000/register` with form validation
+- **Login page** at `http://localhost:3000/login` with authentication
+- **Dashboard page** at `http://localhost:3000/dashboard` (basic template, not yet protected)
 - **Health check** endpoint at `http://localhost:3000/health`
 - **Askama templates** with compile-time validation
 - **Proper error handling** with comprehensive logging
 
+### Authentication & API
+- **User registration API** at `/api/users/register` with:
+  - Email validation (format checking)
+  - Password strength validation (minimum 8 characters)
+  - Argon2 password hashing
+  - Duplicate email detection
+- **User login API** at `/api/users/login` with:
+  - Email/password verification
+  - Secure password comparison
+  - User information response
+
 ### Database
 - **SQLite database** with connection management
-- **Migration system** ready for schema evolution  
+- **Migration system** with rusqlite_migration
 - **Complete database schema** with all required tables:
   - Users with role-based permissions
-  - Fermentation profiles (predefined templates)
+  - Fermentation profiles (predefined templates - 7 profiles seeded)
   - Active/completed fermentations
   - Temperature logs (time-series optimized)
   - Photo documentation
 - **Performance indexes** for optimal queries
+- **Database repository pattern** for clean data access
 
 ### Configuration
 - **Environment-based configuration** (development/production)
 - **TOML configuration files** with proper defaults
-- **Environment variable overrides** with `RAUGUPATIS_` prefix
-- **Secure session management** setup
+- **Environment variable overrides** support
+- **Configuration validation** at startup
+
+### Testing
+- **Unit tests** for authentication (password hashing, email validation)
+- **Integration tests** for all API endpoints and pages
+- **13 passing tests** covering registration and login flows
+- **Test database** using in-memory SQLite for isolation
 
 ### Containerization
 - **Multi-stage Dockerfile** for optimal image size and security
@@ -69,8 +107,8 @@ raugupatis-log/
 - **Makefile** with common development tasks
 - **Setup scripts** for development environment
 - **Deployment scripts** for production
-- **Testing framework** structure in place
 - **Comprehensive .gitignore** and .dockerignore
+- **Devcontainer configuration** for consistent development environment
 
 ## 🚀 How to Run
 
@@ -108,19 +146,32 @@ make clean         # Clean build artifacts
 
 ## 📡 Endpoints
 
-- **GET /** - Beautiful home page with fermentation-themed styling
-- **GET /health** - Health check endpoint (returns "OK")
+### Web Pages (GET)
+- **/** - Beautiful home page with fermentation-themed styling
+- **/register** - User registration form
+- **/login** - User login form
+- **/dashboard** - Dashboard page (template ready, not yet with full functionality)
+- **/health** - Health check endpoint (returns "OK")
+
+### API Endpoints (POST)
+- **/api/users/register** - Create new user account
+  - Accepts: `{ "email": "user@example.com", "password": "password123", "experience_level": "beginner" }`
+  - Returns: User object on success (201), error message on failure
+- **/api/users/login** - Authenticate user
+  - Accepts: `{ "email": "user@example.com", "password": "password123" }`
+  - Returns: `{ "success": true/false, "user": {...}, "message": "..." }`
 
 ## 🏗️ Ready for Implementation
 
-The foundation is now complete and ready for implementing the core fermentation tracking features:
+The foundation is now complete with basic authentication working. Next steps for implementing core fermentation tracking features:
 
-1. **User authentication system** - User registration, login, session management
-2. **Fermentation CRUD operations** - Create, read, update, delete fermentations
-3. **Temperature logging** - Manual data point entry and visualization
-4. **Photo uploads** - Document fermentation stages
-5. **Dashboard and analytics** - Charts and progress tracking
-6. **API endpoints** - RESTful API for mobile/frontend integration
+1. **Session management** - Add tower-sessions middleware for persistent login sessions
+2. **Protected routes** - Secure dashboard and fermentation endpoints with authentication
+3. **Fermentation CRUD operations** - Create, read, update, delete fermentations using the existing database schema
+4. **Temperature logging** - Manual data point entry and visualization with charts
+5. **Photo uploads** - Document fermentation stages with file storage
+6. **Dashboard and analytics** - Interactive charts and progress tracking for active fermentations
+7. **User profile** - View and edit user settings, change password
 
 ## 🔧 Technology Stack Implemented
 
