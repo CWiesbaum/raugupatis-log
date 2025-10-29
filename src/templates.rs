@@ -18,6 +18,38 @@ pub async fn home_handler() -> Html<String> {
 }
 
 #[derive(Template)]
+#[template(path = "login.html")]
+pub struct LoginTemplate {
+    pub title: String,
+}
+
+pub async fn login_handler() -> Html<String> {
+    let template = LoginTemplate {
+        title: "Login - Raugupatis Log".to_string(),
+    };
+    
+    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+}
+
+#[derive(Template)]
+#[template(path = "dashboard.html")]
+pub struct DashboardTemplate {
+    pub title: String,
+    pub user_email: String,
+}
+
+pub async fn dashboard_handler() -> Html<String> {
+    // For now, just show a generic dashboard
+    // In the future, this will get the user from session
+    let template = DashboardTemplate {
+        title: "Dashboard - Raugupatis Log".to_string(),
+        user_email: "User".to_string(),
+    };
+    
+    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+}
+
+#[derive(Template)]
 #[template(path = "register.html")]
 pub struct RegisterTemplate {
     pub title: String,

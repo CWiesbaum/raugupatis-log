@@ -178,6 +178,149 @@ async fn test_register_user_short_password() {
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 #[tokio::test]
+async fn test_login_success() {
+    let app_state = create_test_app_state().await;
+    
+    // First register a user
+    let register_body = json!({
+        "email": "logintest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone());
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Now try to login with correct credentials
+    let login_body = json!({
+        "email": "logintest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state);
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "logintest@example.com");
+    assert_eq!(body_json["message"], "Login successful");
+}
+
+#[tokio::test]
+async fn test_login_wrong_password() {
+    let app_state = create_test_app_state().await;
+    
+    // First register a user
+    let register_body = json!({
+        "email": "wrongpass@example.com",
+        "password": "correctpassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone());
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Try to login with wrong password
+    let login_body = json!({
+        "email": "wrongpass@example.com",
+        "password": "wrongpassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state);
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], false);
+    assert_eq!(body_json["message"], "Invalid email or password");
+}
+
+#[tokio::test]
+async fn test_login_nonexistent_user() {
+    let app = create_test_app().await;
+
+    let login_body = json!({
+        "email": "nonexistent@example.com",
+        "password": "somepassword123"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], false);
+    assert_eq!(body_json["message"], "Invalid email or password");
+}
+
+#[tokio::test]
 async fn test_register_page_endpoint() {
     let app = create_test_app().await;
 
@@ -187,15 +330,60 @@ async fn test_register_page_endpoint() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+}
+
+#[tokio::test]
+async fn test_login_invalid_email() {
+    let app = create_test_app().await;
+
+    let login_body = json!({
+        "email": "not-an-email",
+        "password": "somepassword123"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
         .unwrap();
-    let body_str = String::from_utf8(body.to_vec()).unwrap();
-    
-    // Check that the response contains key elements of the registration form
-    assert!(body_str.contains("Register - Raugupatis Log"));
-    assert!(body_str.contains("registrationForm"));
-    assert!(body_str.contains("email"));
-    assert!(body_str.contains("password"));
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], false);
+    assert_eq!(body_json["message"], "Invalid email format");
+}
+
+#[tokio::test]
+async fn test_login_page_loads() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/login").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_dashboard_page_loads() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/dashboard").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
 }

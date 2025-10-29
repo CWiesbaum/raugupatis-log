@@ -94,3 +94,16 @@ impl From<User> for UserResponse {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct LoginRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LoginResponse {
+    pub success: bool,
+    pub user: Option<UserResponse>,
+    pub message: String,
+}
