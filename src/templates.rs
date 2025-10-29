@@ -16,3 +16,12 @@ pub async fn home_handler() -> Html<String> {
     
     Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
 }
+
+#[derive(Template)]
+#[template(path = "register.html")]
+pub struct RegisterTemplate;
+
+pub async fn register_handler() -> Html<String> {
+    let template = RegisterTemplate;
+    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+}

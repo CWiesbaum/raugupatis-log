@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Raugupatis Log</title>
+    <meta name="description" content="Create your Raugupatis Log account to start tracking your fermentation projects.">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .back-link {
+            display: inline-block;
+            margin-bottom: 1.5rem;
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        .back-link:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 0.75rem;
+            font-size: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #333;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.2);
+        }
+        input.invalid {
+            border-color: #ff6b6b;
+        }
+        .error-message {
+            color: #ff6b6b;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .help-text {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        .submit-btn {
+            width: 100%;
+            padding: 0.875rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .submit-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
+        .submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .success-message {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .error-banner {
+            background: rgba(255, 107, 107, 0.3);
+            border: 2px solid rgba(255, 107, 107, 0.6);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            display: none;
+        }
+        .error-banner.show {
+            display: block;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .emoji {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">← Back to Home</a>
+        
+        <div class="header">
+            <div class="emoji">🥒</div>
+            <h1>Create Your Account</h1>
+        </div>
+
+        <div id="successMessage" class="success-message">
+            <strong>Registration successful!</strong><br>
+            Your account has been created. You can now start tracking your fermentation projects.
+        </div>
+
+        <div id="errorBanner" class="error-banner">
+            <strong>Registration failed:</strong><br>
+            <span id="errorBannerText"></span>
+        </div>
+
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email" 
+                    required
+                    placeholder="your.email@example.com"
+                    autocomplete="email"
+                >
+                <div id="emailError" class="error-message">Please enter a valid email address</div>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    required
+                    placeholder="Enter a strong password"
+                    autocomplete="new-password"
+                >
+                <div class="help-text">Must be at least 8 characters long</div>
+                <div id="passwordError" class="error-message">Password must be at least 8 characters long</div>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirm Password *</label>
+                <input 
+                    type="password" 
+                    id="confirmPassword" 
+                    name="confirmPassword" 
+                    required
+                    placeholder="Re-enter your password"
+                    autocomplete="new-password"
+                >
+                <div id="confirmPasswordError" class="error-message">Passwords do not match</div>
+            </div>
+
+            <div class="form-group">
+                <label for="experienceLevel">Fermentation Experience Level</label>
+                <select id="experienceLevel" name="experienceLevel">
+                    <option value="beginner">Beginner - Just getting started</option>
+                    <option value="intermediate">Intermediate - Some experience</option>
+                    <option value="advanced">Advanced - Experienced fermenter</option>
+                </select>
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn" disabled>
+                Register
+            </button>
+        </form>
+    </div>
+
+    <script>
+        const form = document.getElementById('registerForm');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
+        const confirmPasswordInput = document.getElementById('confirmPassword');
+        const submitBtn = document.getElementById('submitBtn');
+        const successMessage = document.getElementById('successMessage');
+        const errorBanner = document.getElementById('errorBanner');
+        const errorBannerText = document.getElementById('errorBannerText');
+
+        // Validation functions
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function isValidPassword(password) {
+            return password.length >= 8;
+        }
+
+        function passwordsMatch() {
+            return passwordInput.value === confirmPasswordInput.value;
+        }
+
+        function validateEmail() {
+            const email = emailInput.value.trim();
+            const isValid = email && isValidEmail(email);
+            
+            if (!isValid && email) {
+                emailInput.classList.add('invalid');
+                document.getElementById('emailError').classList.add('show');
+            } else {
+                emailInput.classList.remove('invalid');
+                document.getElementById('emailError').classList.remove('show');
+            }
+            
+            return isValid;
+        }
+
+        function validatePassword() {
+            const password = passwordInput.value;
+            const isValid = isValidPassword(password);
+            
+            if (!isValid && password) {
+                passwordInput.classList.add('invalid');
+                document.getElementById('passwordError').classList.add('show');
+            } else {
+                passwordInput.classList.remove('invalid');
+                document.getElementById('passwordError').classList.remove('show');
+            }
+            
+            return isValid;
+        }
+
+        function validateConfirmPassword() {
+            const isValid = passwordsMatch();
+            const confirmPassword = confirmPasswordInput.value;
+            
+            if (!isValid && confirmPassword) {
+                confirmPasswordInput.classList.add('invalid');
+                document.getElementById('confirmPasswordError').classList.add('show');
+            } else {
+                confirmPasswordInput.classList.remove('invalid');
+                document.getElementById('confirmPasswordError').classList.remove('show');
+            }
+            
+            return isValid;
+        }
+
+        function validateForm() {
+            const emailValid = validateEmail();
+            const passwordValid = validatePassword();
+            const confirmPasswordValid = validateConfirmPassword();
+            
+            const allValid = emailValid && passwordValid && confirmPasswordValid;
+            submitBtn.disabled = !allValid;
+            
+            return allValid;
+        }
+
+        // Add event listeners for real-time validation
+        emailInput.addEventListener('input', validateForm);
+        emailInput.addEventListener('blur', validateEmail);
+        passwordInput.addEventListener('input', () => {
+            validatePassword();
+            if (confirmPasswordInput.value) {
+                validateConfirmPassword();
+            }
+            validateForm();
+        });
+        confirmPasswordInput.addEventListener('input', validateForm);
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            if (!validateForm()) {
+                return;
+            }
+
+            // Hide any previous messages
+            successMessage.classList.remove('show');
+            errorBanner.classList.remove('show');
+
+            // Disable submit button during request
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Registering...';
+
+            try {
+                const response = await fetch('/api/users/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: emailInput.value.trim(),
+                        password: passwordInput.value,
+                        experience_level: document.getElementById('experienceLevel').value
+                    })
+                });
+
+                if (response.ok) {
+                    // Success
+                    successMessage.classList.add('show');
+                    form.reset();
+                    submitBtn.textContent = 'Register';
+                    // Keep button disabled after successful registration
+                    submitBtn.disabled = true;
+                } else {
+                    // Error from server
+                    const errorData = await response.json();
+                    errorBannerText.textContent = errorData.error || 'An error occurred during registration';
+                    errorBanner.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Register';
+                }
+            } catch (error) {
+                // Network or other error
+                errorBannerText.textContent = 'Failed to connect to server. Please try again.';
+                errorBanner.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Register';
+            }
+        });
+
+        // Initial form validation
+        validateForm();
+    </script>
+</body>
+</html>

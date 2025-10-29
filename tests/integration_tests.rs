@@ -177,3 +177,26 @@ async fn test_register_user_short_password() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn test_register_page() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/register").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_text = String::from_utf8(body.to_vec()).unwrap();
+    
+    // Verify the registration form is rendered
+    assert!(body_text.contains("Create Your Account"));
+    assert!(body_text.contains("email"));
+    assert!(body_text.contains("password"));
+    assert!(body_text.contains("Register"));
+}

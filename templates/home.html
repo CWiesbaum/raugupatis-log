@@ -102,6 +102,28 @@
         .status-item {
             margin: 0.25rem 0;
         }
+        .cta-section {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            text-decoration: none;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+        }
         
         /* Mobile responsive styles */
         @media (max-width: 768px) {
@@ -166,6 +188,10 @@
                 <li>Document your process with photos and notes</li>
                 <li>Analyze historical fermentations to optimize your technique</li>
             </ul>
+        </div>
+        
+        <div class="cta-section">
+            <a href="/register" class="btn">Get Started - Register Now</a>
         </div>
         
         <div class="status">
