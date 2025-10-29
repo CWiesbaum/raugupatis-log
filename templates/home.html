@@ -164,6 +164,31 @@
             box-shadow: 0 6px 20px rgba(81, 207, 102, 0.4);
         }
         
+        .btn-logout {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.8);
+        }
+        
+        .btn-logout:hover {
+            background: rgba(244, 67, 54, 0.7);
+            border-color: rgba(244, 67, 54, 1);
+        }
+        
+        .user-info {
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+        
+        .user-info-label {
+            font-size: 1.1rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .user-info-email {
+            font-size: 1.2rem;
+            font-weight: 600;
+        }
+        
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -241,12 +266,47 @@
             <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
         </div>
         
-        <div class="actions">
-            <a href="/login" class="btn btn-primary">Login</a>
+        <div class="actions" id="authActions">
+            <a href="/login" class="btn btn-primary" id="loginButton">Login</a>
       </div>
-        <div class="cta-section">
+        <div class="cta-section" id="ctaSection">
             <a href="/register" class="btn btn-primary">Register Now</a>
         </div>
+        <div class="actions" id="userActions" style="display: none;">
+            <div class="user-info">
+                <p class="user-info-label">Logged in as:</p>
+                <p class="user-info-email" id="userEmail"></p>
+            </div>
+            <a href="/dashboard" class="btn btn-primary">Go to Dashboard</a>
+            <button class="btn btn-logout" id="logoutButton">Logout</button>
+        </div>
     </div>
+    
+    <script>
+        // Check if user is logged in
+        try {
+            const user = JSON.parse(sessionStorage.getItem('user') || 'null');
+            
+            if (user && user.email) {
+                // Hide login and register buttons
+                document.getElementById('authActions').style.display = 'none';
+                document.getElementById('ctaSection').style.display = 'none';
+                
+                // Show user actions
+                document.getElementById('userActions').style.display = 'block';
+                // Using textContent prevents XSS attacks
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // Handle logout
+                document.getElementById('logoutButton').addEventListener('click', function() {
+                    sessionStorage.removeItem('user');
+                    window.location.reload();
+                });
+            }
+        } catch (e) {
+            // If JSON parsing fails, just show login buttons (default state)
+            console.error('Failed to parse user session data:', e);
+        }
+    </script>
 </body>
 </html>
