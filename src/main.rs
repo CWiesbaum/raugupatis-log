@@ -39,23 +39,3 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 
     Ok(())
 }
-
-async fn home_handler() -> Html<String> {
-    let template = templates::HomeTemplate {
-        title: "Raugupatis Log".to_string(),
-        message: "Welcome! Master your fermentation batches with digital precision.".to_string(),
-    };
-    
-    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
-}
-
-async fn health_handler(State(state): State<AppState>) -> Result<&'static str, StatusCode> {
-    // Simple health check - could be expanded to check database connectivity
-    match state.db.health_check().await {
-        Ok(_) => Ok("OK"),
-        Err(e) => {
-            warn!("Health check failed: {}", e);
-            Err(StatusCode::SERVICE_UNAVAILABLE)
-        }
-    }
-}
