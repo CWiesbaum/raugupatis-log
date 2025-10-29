@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ title }}</title>
+    <meta name="description" content="Raugupatis Log - Your fermentation tracking companion. Monitor temperature, ingredients, time, and more for all your fermentation projects.">
     <style>
+        * {
+            box-sizing: border-box;
+        }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             line-height: 1.6;
             margin: 0;
-            padding: 2rem;
+            padding: 1rem;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
             min-height: 100vh;
@@ -19,46 +23,154 @@
             align-items: center;
         }
         .container {
-            text-align: center;
-            max-width: 600px;
+            max-width: 800px;
+            width: 100%;
             padding: 2rem;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 20px;
             backdrop-filter: blur(10px);
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
-        h1 {
-            font-size: 3rem;
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 4rem;
             margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
         }
-        p {
+        .tagline {
             font-size: 1.2rem;
-            opacity: 0.9;
+            opacity: 0.95;
+            margin-bottom: 1rem;
+            font-style: italic;
+        }
+        .greeting {
+            font-size: 1.3rem;
             margin-bottom: 2rem;
+            text-align: center;
+            font-weight: 500;
+        }
+        .about {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .about h2 {
+            margin-top: 0;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+        }
+        .about p {
+            margin: 0.75rem 0;
+            font-size: 1.05rem;
+            line-height: 1.7;
+        }
+        .features {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .features h3 {
+            margin-top: 0;
+            font-size: 1.2rem;
+            margin-bottom: 1rem;
+        }
+        .features ul {
+            margin: 0;
+            padding-left: 1.5rem;
+        }
+        .features li {
+            margin-bottom: 0.5rem;
+            font-size: 1.05rem;
         }
         .status {
             background: rgba(76, 175, 80, 0.2);
             border: 1px solid rgba(76, 175, 80, 0.5);
             border-radius: 10px;
             padding: 1rem;
-            margin-top: 2rem;
+            text-align: center;
+            font-size: 0.95rem;
         }
-        .emoji {
-            font-size: 4rem;
-            margin-bottom: 1rem;
+        .status-item {
+            margin: 0.25rem 0;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .emoji {
+                font-size: 3rem;
+            }
+            .tagline {
+                font-size: 1rem;
+            }
+            .greeting {
+                font-size: 1.1rem;
+            }
+            .about h2 {
+                font-size: 1.3rem;
+            }
+            .about p, .features li {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="emoji">🥒</div>
-        <h1>{{ title }}</h1>
-        <p>{{ message }}</p>
+        <div class="header">
+            <div class="emoji">🥒</div>
+            <h1>{{ title }}</h1>
+            <p class="tagline">Your Fermentation Tracking Companion</p>
+        </div>
+        
+        <p class="greeting">{{ message }}</p>
+        
+        <div class="about">
+            <h2>What is Raugupatis Log?</h2>
+            <p>
+                Named after the Baltic deity of fermentation and pickles, Raugupatis Log is 
+                the ultimate fermentation tracker. It brings ancient wisdom into the modern 
+                kitchen, helping you achieve consistent, high-quality fermentation results 
+                through precise monitoring and data-driven insights.
+            </p>
+            <p>
+                Log and monitor your food ferments—temperature, ingredients, time, and more. 
+                Track pickles, kombucha, kimchi, sauerkraut, sourdough, kefir, and other 
+                fermentation projects with the digital precision of a fermentation deity.
+            </p>
+        </div>
+        
+        <div class="features">
+            <h3>Key Features</h3>
+            <ul>
+                <li>Track multiple fermentation batches simultaneously</li>
+                <li>Log temperature data points with interactive charts</li>
+                <li>Use predefined profiles for common fermentation types</li>
+                <li>Document your process with photos and notes</li>
+                <li>Analyze historical fermentations to optimize your technique</li>
+            </ul>
+        </div>
+        
         <div class="status">
-            <strong>Status:</strong> ✅ Server is running successfully!<br>
-            <strong>Database:</strong> ✅ Connected and ready<br>
-            <strong>Environment:</strong> 🚀 Development mode
+            <div class="status-item"><strong>Status:</strong> ✅ Server is running successfully!</div>
+            <div class="status-item"><strong>Database:</strong> ✅ Connected and ready</div>
         </div>
     </div>
 </body>

@@ -78,7 +78,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 async fn home_handler() -> Html<String> {
     let template = templates::HomeTemplate {
         title: "Raugupatis Log".to_string(),
-        message: "Welcome to Raugupatis Log - Your Fermentation Tracking Companion!".to_string(),
+        message: "Welcome! Master your fermentation batches with digital precision.".to_string(),
     };
     
     Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
