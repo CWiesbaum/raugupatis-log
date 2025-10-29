@@ -1,6 +1,6 @@
-use crate::auth::hash_password;
 use crate::database::Database;
-use crate::models::{CreateUserRequest, ExperienceLevel, User, UserRole};
+use crate::users::auth::hash_password;
+use crate::users::models::{CreateUserRequest, ExperienceLevel, User, UserRole};
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
 use std::sync::Arc;

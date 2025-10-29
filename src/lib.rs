@@ -13,17 +13,13 @@ use tower_sessions_rusqlite_store::{RusqliteStore, tokio_rusqlite};
 use std::sync::Arc;
 use time::Duration;
 
-pub mod auth;
 pub mod config;
 pub mod database;
-mod handlers;
-mod models;
-mod repository;
 pub mod templates;
+pub mod users;
 
 pub use config::AppConfig;
 pub use database::Database;
-use handlers::{login_user, register_user, logout_user};
 
 #[derive(Clone)]
 pub struct AppState {
@@ -47,13 +43,13 @@ pub async fn create_router(app_state: AppState) -> Router {
 
     Router::new()
         .route("/", get(crate::templates::home_handler))
-        .route("/register", get(crate::templates::register_handler))
+        .route("/register", get(crate::users::register_handler))
         .route("/health", get(health_handler))
-        .route("/login", get(crate::templates::login_handler))
+        .route("/login", get(crate::users::login_handler))
         .route("/dashboard", get(crate::templates::dashboard_handler))
-        .route("/api/users/register", post(register_user))
-        .route("/api/users/login", post(login_user))
-        .route("/api/users/logout", post(logout_user))
+        .route("/api/users/register", post(crate::users::register_user))
+        .route("/api/users/login", post(crate::users::login_user))
+        .route("/api/users/logout", post(crate::users::logout_user))
         .with_state(app_state)
         .layer(
             ServiceBuilder::new()
