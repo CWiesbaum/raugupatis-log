@@ -185,6 +185,30 @@
         
         <form id="profileForm">
             <div class="form-group">
+                <label for="first_name">First Name (optional)</label>
+                <input 
+                    type="text" 
+                    id="first_name" 
+                    name="first_name" 
+                    placeholder="John"
+                    value="{% match user.first_name %}{% when Some with (name) %}{{ name }}{% when None %}{% endmatch %}"
+                    autocomplete="given-name"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="last_name">Last Name (optional)</label>
+                <input 
+                    type="text" 
+                    id="last_name" 
+                    name="last_name" 
+                    placeholder="Doe"
+                    value="{% match user.last_name %}{% when Some with (name) %}{{ name }}{% when None %}{% endmatch %}"
+                    autocomplete="family-name"
+                >
+            </div>
+            
+            <div class="form-group">
                 <label for="experience_level">Fermentation Experience Level</label>
                 <select id="experience_level" name="experience_level" required>
                     <option value="beginner" {% if user.experience_level == "beginner" %}selected{% endif %}>Beginner - Just starting out</option>
@@ -222,6 +246,8 @@
         }
 
         const form = document.getElementById('profileForm');
+        const firstNameInput = document.getElementById('first_name');
+        const lastNameInput = document.getElementById('last_name');
         const experienceSelect = document.getElementById('experience_level');
         const submitButton = document.getElementById('submitButton');
         const messageDiv = document.getElementById('message');
@@ -251,6 +277,14 @@
             const profileData = {
                 experience_level: experienceSelect.value
             };
+            
+            // Add optional fields
+            if (firstNameInput.value.trim()) {
+                profileData.first_name = firstNameInput.value.trim();
+            }
+            if (lastNameInput.value.trim()) {
+                profileData.last_name = lastNameInput.value.trim();
+            }
 
             try {
                 const response = await fetch('/api/users/profile', {

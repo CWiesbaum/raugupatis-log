@@ -197,6 +197,28 @@
             </div>
             
             <div class="form-group">
+                <label for="firstName">First Name (optional)</label>
+                <input 
+                    type="text" 
+                    id="firstName" 
+                    name="firstName" 
+                    placeholder="John"
+                    autocomplete="given-name"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label for="lastName">Last Name (optional)</label>
+                <input 
+                    type="text" 
+                    id="lastName" 
+                    name="lastName" 
+                    placeholder="Doe"
+                    autocomplete="family-name"
+                >
+            </div>
+            
+            <div class="form-group">
                 <label for="password">Password</label>
                 <input 
                     type="password" 
@@ -248,6 +270,8 @@
     <script>
         const form = document.getElementById('registrationForm');
         const emailInput = document.getElementById('email');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('confirmPassword');
         const experienceLevelSelect = document.getElementById('experienceLevel');
@@ -355,6 +379,14 @@
                 password: passwordInput.value,
                 experience_level: experienceLevelSelect.value
             };
+            
+            // Add optional fields if they have values
+            if (firstNameInput.value.trim()) {
+                formData.first_name = firstNameInput.value.trim();
+            }
+            if (lastNameInput.value.trim()) {
+                formData.last_name = lastNameInput.value.trim();
+            }
             
             try {
                 const response = await fetch('/api/users/register', {

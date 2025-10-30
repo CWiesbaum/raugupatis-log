@@ -689,3 +689,215 @@ async fn test_update_profile_invalid_experience_level() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn test_register_user_with_first_and_last_name() {
+    let app = common::create_test_app().await;
+
+    let request_body = json!({
+        "email": "nameduser@example.com",
+        "password": "securepassword123",
+        "first_name": "John",
+        "last_name": "Doe"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "nameduser@example.com");
+    assert_eq!(body_json["first_name"], "John");
+    assert_eq!(body_json["last_name"], "Doe");
+}
+
+#[tokio::test]
+async fn test_register_user_without_names() {
+    let app = common::create_test_app().await;
+
+    let request_body = json!({
+        "email": "noname@example.com",
+        "password": "securepassword123"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "noname@example.com");
+    // Names should be null when not provided
+    assert!(body_json["first_name"].is_null());
+    assert!(body_json["last_name"].is_null());
+}
+
+#[tokio::test]
+async fn test_update_profile_with_names() {
+    let app_state = common::create_test_app_state().await;
+    
+    // Register a user without names
+    let register_body = json!({
+        "email": "updatenames@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login to get session
+    let login_body = json!({
+        "email": "updatenames@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Update profile with names
+    let update_body = json!({
+        "experience_level": "intermediate",
+        "first_name": "Jane",
+        "last_name": "Smith"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "updatenames@example.com");
+    assert_eq!(body_json["experience_level"], "intermediate");
+    assert_eq!(body_json["first_name"], "Jane");
+    assert_eq!(body_json["last_name"], "Smith");
+}
+
+#[tokio::test]
+async fn test_login_returns_user_names() {
+    let app_state = common::create_test_app_state().await;
+    
+    // Register with names
+    let register_body = json!({
+        "email": "withnames@example.com",
+        "password": "securepassword123",
+        "first_name": "Alice",
+        "last_name": "Wonder"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login and verify names are returned
+    let login_body = json!({
+        "email": "withnames@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "withnames@example.com");
+    assert_eq!(body_json["user"]["first_name"], "Alice");
+    assert_eq!(body_json["user"]["last_name"], "Wonder");
+}

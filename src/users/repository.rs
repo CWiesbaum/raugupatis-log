@@ -27,13 +27,15 @@ impl UserRepository {
         let db = self.db.clone();
         let email = request.email.clone();
         let experience_level_str = experience_level.as_str().to_string();
+        let first_name = request.first_name.clone();
+        let last_name = request.last_name.clone();
 
         let user_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
             
             conn.execute(
-                "INSERT INTO users (email, password_hash, role, experience_level) VALUES (?1, ?2, ?3, ?4)",
-                rusqlite::params![&email, &password_hash, "user", &experience_level_str],
+                "INSERT INTO users (email, password_hash, role, experience_level, first_name, last_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
+                rusqlite::params![&email, &password_hash, "user", &experience_level_str, &first_name, &last_name],
             )?;
             
             let user_id = conn.last_insert_rowid();
@@ -55,7 +57,7 @@ impl UserRepository {
             let conn = db.get_connection().lock().unwrap();
             
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, created_at, updated_at 
+                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, created_at, updated_at 
                  FROM users WHERE email = ?1"
             )?;
 
@@ -66,8 +68,10 @@ impl UserRepository {
                     password_hash: row.get(2)?,
                     role: UserRole::from(row.get::<_, String>(3)?),
                     experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
-                    created_at: parse_datetime(row.get::<_, String>(5)?),
-                    updated_at: parse_datetime(row.get::<_, String>(6)?),
+                    first_name: row.get(5)?,
+                    last_name: row.get(6)?,
+                    created_at: parse_datetime(row.get::<_, String>(7)?),
+                    updated_at: parse_datetime(row.get::<_, String>(8)?),
                 })
             }).optional()?;
 
@@ -86,7 +90,7 @@ impl UserRepository {
             let conn = db.get_connection().lock().unwrap();
             
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, created_at, updated_at 
+                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, created_at, updated_at 
                  FROM users WHERE id = ?1"
             )?;
 
@@ -97,8 +101,10 @@ impl UserRepository {
                     password_hash: row.get(2)?,
                     role: UserRole::from(row.get::<_, String>(3)?),
                     experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
-                    created_at: parse_datetime(row.get::<_, String>(5)?),
-                    updated_at: parse_datetime(row.get::<_, String>(6)?),
+                    first_name: row.get(5)?,
+                    last_name: row.get(6)?,
+                    created_at: parse_datetime(row.get::<_, String>(7)?),
+                    updated_at: parse_datetime(row.get::<_, String>(8)?),
                 })
             })?;
 
@@ -121,6 +127,31 @@ impl UserRepository {
             conn.execute(
                 "UPDATE users SET experience_level = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2",
                 rusqlite::params![&experience_level_str, user_id],
+            )?;
+
+            Ok(())
+        })
+        .await??;
+
+        self.find_by_id(user_id).await
+    }
+
+    pub async fn update_profile(
+        &self,
+        user_id: i64,
+        experience_level: ExperienceLevel,
+        first_name: Option<String>,
+        last_name: Option<String>,
+    ) -> Result<User, Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+        let experience_level_str = experience_level.as_str().to_string();
+
+        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+            
+            conn.execute(
+                "UPDATE users SET experience_level = ?1, first_name = ?2, last_name = ?3, updated_at = CURRENT_TIMESTAMP WHERE id = ?4",
+                rusqlite::params![&experience_level_str, &first_name, &last_name, user_id],
             )?;
 
             Ok(())

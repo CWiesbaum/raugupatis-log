@@ -85,6 +85,8 @@ pub struct User {
     pub password_hash: String,
     pub role: UserRole,
     pub experience_level: ExperienceLevel,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -95,6 +97,10 @@ pub struct CreateUserRequest {
     pub password: String,
     #[serde(default)]
     pub experience_level: Option<String>,
+    #[serde(default)]
+    pub first_name: Option<String>,
+    #[serde(default)]
+    pub last_name: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -103,6 +109,8 @@ pub struct UserResponse {
     pub email: String,
     pub role: UserRole,
     pub experience_level: ExperienceLevel,
+    pub first_name: Option<String>,
+    pub last_name: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -113,6 +121,8 @@ impl From<User> for UserResponse {
             email: user.email,
             role: user.role,
             experience_level: user.experience_level,
+            first_name: user.first_name,
+            last_name: user.last_name,
             created_at: user.created_at,
         }
     }
@@ -141,4 +151,8 @@ pub struct UserSession {
 #[derive(Debug, Deserialize)]
 pub struct UpdateProfileRequest {
     pub experience_level: String,
+    #[serde(default)]
+    pub first_name: Option<String>,
+    #[serde(default)]
+    pub last_name: Option<String>,
 }
