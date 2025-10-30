@@ -1,7 +1,10 @@
 use askama::Template;
 use axum::response::{Html, Redirect};
+use axum::extract::State;
 use tower_sessions::Session;
-use crate::users::UserSession;
+use crate::users::{UserSession, UserResponse};
+use crate::users::repository::UserRepository;
+use crate::AppState;
 
 #[derive(Template)]
 #[template(path = "home.html")]
@@ -23,25 +26,32 @@ pub async fn home_handler() -> Html<String> {
 #[template(path = "dashboard.html")]
 pub struct DashboardTemplate {
     pub title: String,
-    pub user_email: String,
+    pub user: UserResponse,
 }
 
-pub async fn dashboard_handler(session: Session) -> Result<Html<String>, Redirect> {
-    // Get user from session
-    let user_session: Option<UserSession> = session
+pub async fn dashboard_handler(
+    session: Session,
+    State(state): State<AppState>,
+) -> Result<Html<String>, Redirect> {
+    // Check if user is authenticated
+    let user_session: UserSession = session
         .get("user")
         .await
-        .unwrap_or(None);
+        .ok()
+        .flatten()
+        .ok_or_else(|| Redirect::to("/login"))?;
+
+    // Fetch user details from database
+    let user_repo = UserRepository::new(state.db.clone());
+    let user = user_repo
+        .find_by_id(user_session.user_id)
+        .await
+        .map_err(|_| Redirect::to("/login"))?;
+
+    let template = DashboardTemplate {
+        title: "Dashboard - Raugupatis Log".to_string(),
+        user: UserResponse::from(user),
+    };
     
-    if let Some(user) = user_session {
-        let template = DashboardTemplate {
-            title: "Dashboard - Raugupatis Log".to_string(),
-            user_email: user.email,
-        };
-        
-        Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
-    } else {
-        // Redirect to login if not authenticated
-        Err(Redirect::to("/login"))
-    }
+    Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
 }

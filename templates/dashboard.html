@@ -178,11 +178,26 @@
             </p>
         </div>
         
-        <div class="user-info" id="userInfo" style="display: none;">
+        <div class="user-info">
             <h3>Your Profile</h3>
-            <div class="info-item"><strong>Email:</strong> <span id="userEmail"></span></div>
-            <div class="info-item"><strong>Role:</strong> <span id="userRole"></span></div>
-            <div class="info-item"><strong>Experience Level:</strong> <span id="userExperienceLevel"></span></div>
+            {% match user.first_name %}
+                {% when Some with (first_name) %}
+                    {% match user.last_name %}
+                        {% when Some with (last_name) %}
+                            <div class="info-item"><strong>Name:</strong> {{ first_name }} {{ last_name }}</div>
+                        {% when None %}
+                            <div class="info-item"><strong>First Name:</strong> {{ first_name }}</div>
+                    {% endmatch %}
+                {% when None %}
+                    {% match user.last_name %}
+                        {% when Some with (last_name) %}
+                            <div class="info-item"><strong>Last Name:</strong> {{ last_name }}</div>
+                        {% when None %}
+                    {% endmatch %}
+            {% endmatch %}
+            <div class="info-item"><strong>Email:</strong> {{ user.email }}</div>
+            <div class="info-item"><strong>Role:</strong> {{ user.role }}</div>
+            <div class="info-item"><strong>Experience Level:</strong> {{ user.experience_level }}</div>
         </div>
         
         <div class="actions">
@@ -199,38 +214,9 @@
     </div>
 
     <script>
-        // Helper function to capitalize first letter
-        function capitalizeFirst(str) {
-            if (!str) return '';
-            return str.charAt(0).toUpperCase() + str.slice(1);
-        }
-
-        // Load user info from session storage
-        const userJson = sessionStorage.getItem('user');
-        if (userJson) {
-            try {
-                const user = JSON.parse(userJson);
-                
-                // Update greeting
-                const greeting = document.getElementById('greeting');
-                if (user.email) {
-                    greeting.textContent = `Welcome, ${user.email}!`;
-                }
-                
-                // Show and populate user info
-                const userInfo = document.getElementById('userInfo');
-                userInfo.style.display = 'block';
-                
-                document.getElementById('userEmail').textContent = user.email || 'N/A';
-                document.getElementById('userRole').textContent = user.role || 'user';
-                
-                // Display experience level with proper formatting
-                const experienceLevel = user.experience_level || 'beginner';
-                document.getElementById('userExperienceLevel').textContent = capitalizeFirst(experienceLevel);
-            } catch (error) {
-                console.error('Error parsing user data:', error);
-            }
-        }
+        // Update greeting with user email
+        const greeting = document.getElementById('greeting');
+        greeting.textContent = `Welcome, {{ user.email }}!`;
 
         // Handle logout
         const logoutButton = document.getElementById('logoutButton');
