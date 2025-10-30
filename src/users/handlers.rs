@@ -208,9 +208,9 @@ pub async fn update_profile(
     let experience_level = ExperienceLevel::from(request.experience_level);
     let user_repo = UserRepository::new(state.db.clone());
 
-    // Update the user's experience level
+    // Update the user's profile (experience level, first name, and last name)
     let updated_user = user_repo
-        .update_experience_level(user_session.user_id, experience_level)
+        .update_profile(user_session.user_id, experience_level, request.first_name, request.last_name)
         .await
         .map_err(|e| ApiError::DatabaseError(format!("Failed to update profile: {}", e)))?;
 

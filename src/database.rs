@@ -33,10 +33,12 @@ impl Database {
         // Read migration files
         let migration_sql_001 = include_str!("../migrations/001_initial_schema.sql");
         let migration_sql_002 = include_str!("../migrations/002_add_sessions_table.sql");
+        let migration_sql_003 = include_str!("../migrations/003_add_user_names.sql");
         
         let migrations = Migrations::new(vec![
             M::up(migration_sql_001),
             M::up(migration_sql_002),
+            M::up(migration_sql_003),
         ]);
 
         // Apply migrations - need to move the migrations into the closure
