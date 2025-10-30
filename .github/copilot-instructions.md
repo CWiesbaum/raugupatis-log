@@ -5,8 +5,8 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 
 ### Current Implementation Status
 - **Phase 1 (Complete)**: Basic authentication, user registration/login, database schema, testing infrastructure
-- **Phase 2 (In Progress)**: Session management, protected routes, fermentation CRUD operations
-- **Phase 3 (Planned)**: Temperature logging with charts, photo uploads, dashboard analytics
+- **Phase 2 (Complete)**: Session management with tower-sessions, protected routes with authentication, fermentation CRUD operations (create, list, get profiles), user profile management
+- **Phase 3 (In Progress)**: Temperature logging with charts, photo uploads, dashboard analytics, view/update/delete fermentation details
 
 ## Architecture & Technology Stack
 
