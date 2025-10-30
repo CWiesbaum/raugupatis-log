@@ -198,6 +198,12 @@
     </div>
 
     <script>
+        // Helper function to capitalize first letter
+        function capitalizeFirst(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
         // Load user info from session storage
         const userJson = sessionStorage.getItem('user');
         if (userJson) {
@@ -219,8 +225,7 @@
                 
                 // Display experience level with proper formatting
                 const experienceLevel = user.experience_level || 'beginner';
-                const formattedLevel = experienceLevel.charAt(0).toUpperCase() + experienceLevel.slice(1);
-                document.getElementById('userExperienceLevel').textContent = formattedLevel;
+                document.getElementById('userExperienceLevel').textContent = capitalizeFirst(experienceLevel);
             } catch (error) {
                 console.error('Error parsing user data:', error);
             }
