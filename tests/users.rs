@@ -908,7 +908,7 @@ async fn test_login_without_remember_me() {
     
     // Register a user
     let register_body = json!({
-        "email": "norememeber@example.com",
+        "email": "noremember@example.com",
         "password": "securepassword123"
     });
 
@@ -929,7 +929,7 @@ async fn test_login_without_remember_me() {
 
     // Login without remember_me (defaults to false)
     let login_body = json!({
-        "email": "norememeber@example.com",
+        "email": "noremember@example.com",
         "password": "securepassword123"
     });
 
@@ -954,7 +954,7 @@ async fn test_login_without_remember_me() {
     let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
     assert_eq!(body_json["success"], true);
-    assert_eq!(body_json["user"]["email"], "norememeber@example.com");
+    assert_eq!(body_json["user"]["email"], "noremember@example.com");
 }
 
 #[tokio::test]
