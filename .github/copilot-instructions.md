@@ -164,49 +164,127 @@ fermentation_photos (id, fermentation_id, file_path, caption, taken_at, stage)
 
 ## Testing Strategy (Best-of-Breed Rust/Axum)
 
-### Test Organization
-```rust
-// Use cargo-nextest for faster test execution
-// tests/
-//   ├── integration/     # Full HTTP integration tests
-//   ├── unit/           # Individual function tests  
-//   └── common/         # Shared test utilities
+### Test Organization (Domain-Based Structure)
+
+Integration tests are organized by domain to match the application architecture and reduce merge conflicts:
+
 ```
+tests/
+├── common/
+│   └── mod.rs           # Shared test utilities (create_test_app, create_test_app_state)
+├── general.rs           # Infrastructure tests (health checks, home page)
+├── users.rs             # User domain integration tests
+├── fermentation.rs      # Fermentation domain integration tests
+└── [domain].rs          # Additional domain test files as needed
+```
+
+**Key principles:**
+- Each domain has its own test file to minimize merge conflicts
+- Common test utilities are shared in `tests/common/mod.rs`
+- Tests use temporary SQLite databases for isolation
+- Follow the same domain structure as the application code
 
 ### Testing Stack
 - **Unit Tests**: Built-in `#[cfg(test)]` with `tokio::test` for async
-- **Integration Tests**: `axum-test` crate for HTTP endpoint testing
+- **Integration Tests**: Domain-organized files using Axum's test helpers
 - **Property Testing**: `proptest` for fermentation state validation
-- **Database Tests**: `sqlx-test` or in-memory SQLite for isolation
+- **Database Tests**: Temporary SQLite files for isolation
+  - Uses temp files (not in-memory) to match production environment behavior
+  - Each test gets a unique temp DB file with timestamp for complete isolation
+  - Slight performance trade-off for better production parity
 - **Template Tests**: Compile-time validation via Askama + unit tests for data binding
 
-### Key Test Patterns
+### Integration Test Patterns
+
+#### Common Utilities (tests/common/mod.rs)
 ```rust
-// HTTP endpoint testing with axum-test
-#[tokio::test]
-async fn test_create_fermentation() {
-    let server = TestServer::new(app()).unwrap();
-    let response = server
-        .post("/fermentations")
-        .json(&new_fermentation)
-        .await;
-    assert_eq!(response.status_code(), StatusCode::CREATED);
+use axum::Router;
+use raugupatis_log::{config::AppConfig, database::Database, AppState};
+use std::sync::Arc;
+
+/// Creates a test app with a fresh database
+pub async fn create_test_app() -> Router {
+    let app_state = create_test_app_state().await;
+    raugupatis_log::create_router(app_state).await
 }
 
-// Property-based testing for fermentation logic
-proptest! {
-    #[test]
-    fn fermentation_never_negative_days(start in any::<DateTime<Utc>>()) {
-        let fermentation = Fermentation::new(start);
-        prop_assert!(fermentation.days_elapsed() >= 0);
-    }
+/// Creates app state with a unique temporary database
+pub async fn create_test_app_state() -> AppState {
+    // Creates unique temp DB file with timestamp to ensure isolation
+    let temp_dir = std::env::temp_dir();
+    let test_db_path = temp_dir
+        .join(format!("test_raugupatis_{}.db", timestamp))
+        .to_string_lossy()
+        .to_string();
+    
+    let config = Arc::new(AppConfig {
+        database_url: test_db_path,
+        environment: "test".to_string(),
+        session_secret: "test-secret".to_string(),
+        // ... other config fields
+    });
+    
+    let db = Arc::new(Database::new(&config.database_url).await.unwrap());
+    db.migrate().await.unwrap();
+    
+    AppState { db, config }
 }
 ```
 
-### Test Database Setup
-- Use `rusqlite::Connection::open_in_memory()` for fast, isolated tests
-- Create `TestApp` struct wrapping application with test database
-- Implement `Default` trait for easy test data creation
+#### Domain Test File Pattern
+```rust
+mod common;  // Import common test utilities
+
+use axum::{body::Body, http::{Request, StatusCode}};
+use serde_json::json;
+use tower::ServiceExt;
+
+#[tokio::test]
+async fn test_domain_feature() {
+    let app = common::create_test_app().await;
+    
+    let request_body = json!({"field": "value"});
+    
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/endpoint")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    
+    assert_eq!(response.status(), StatusCode::OK);
+}
+```
+
+### When Adding Tests for New Features
+
+1. **Identify the domain** - Determine which domain your feature belongs to
+2. **Add tests to the appropriate domain file** - Keep related tests together
+   - User registration/login/profile → `tests/users.rs`
+   - Fermentation CRUD → `tests/fermentation.rs`
+   - Temperature logs → create `tests/temperature_logs.rs`
+3. **Use common utilities** - Always use `common::create_test_app()` for consistency
+4. **Test edge cases** - Include success, failure, validation, and authorization tests
+5. **Follow naming conventions** - `test_[feature]_[scenario]` (e.g., `test_login_invalid_credentials`)
+
+### For New Domains
+
+When creating a new domain (e.g., `photos`, `analytics`):
+1. Create application code in `src/[domain]/`
+2. Create test file `tests/[domain].rs`
+3. Add `mod common;` at the top
+4. Follow the same patterns as existing domain test files
+
+This ensures:
+- **Reduced merge conflicts** - Multiple developers can work on different domains simultaneously
+- **Better test organization** - Tests are grouped with their related functionality
+- **Easier maintenance** - Find all tests for a feature in one place
+- **Consistent patterns** - Standard structure makes it easy to add new tests
 
 ## Deployment Process
 
@@ -257,7 +335,10 @@ docker run -p 3000:3000 -v ./data:/app/data raugupatis-log:latest
 3. Write unit tests for business logic before implementation
 4. Create Askama templates with type-safe data binding and error handling
 5. Implement Axum handlers with async/await patterns and proper extractors
-6. Add integration tests covering the full HTTP request cycle
+6. **Add integration tests to the appropriate domain test file** (or create a new `tests/[domain].rs` file for new domains)
+   - Use `common::create_test_app()` for consistency
+   - Test success cases, edge cases, validation, and authorization
+   - Follow naming convention: `test_[feature]_[scenario]`
 7. Ensure mobile-responsive design and accessibility in templates
 8. Update API documentation and add logging/tracing as needed
 9. Ensure that README.md, PROJECT_SETUP.md and relevant docs are updated with new feature details
