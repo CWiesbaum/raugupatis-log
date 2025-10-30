@@ -58,7 +58,7 @@
 		"source=${localWorkspaceFolder}/target,target=/tmp/target,type=bind,consistency=cached"
 	],
 
-	"postCreateCommand": "rustup component add clippy rustfmt && cargo install cargo-watch cargo-nextest sqlx-cli",
+	"postCreateCommand": "sudo apt-get update && sudo apt-get install -y sqlite3 && rustup component add clippy rustfmt && cargo install cargo-watch cargo-nextest sqlx-cli",
 
 	"remoteUser": "vscode",
 
