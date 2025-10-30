@@ -42,7 +42,10 @@ pub async fn fermentation_list_handler(
             fermentations,
         };
         
-        Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
+        Ok(Html(template.render().unwrap_or_else(|e| {
+            tracing::error!("Failed to render fermentation list template: {}", e);
+            "Error rendering fermentation list".to_string()
+        })))
     } else {
         // Redirect to login if not authenticated
         Err(Redirect::to("/login"))

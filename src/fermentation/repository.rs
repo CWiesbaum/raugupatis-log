@@ -173,5 +173,8 @@ fn parse_datetime(s: String) -> DateTime<Utc> {
     chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%d %H:%M:%S")
         .ok()
         .map(|dt| dt.and_utc())
-        .unwrap_or_else(Utc::now)
+        .unwrap_or_else(|| {
+            tracing::warn!("Failed to parse datetime '{}', falling back to current time", s);
+            Utc::now()
+        })
 }
