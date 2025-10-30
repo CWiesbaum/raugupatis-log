@@ -7,15 +7,20 @@
 - Database schema implemented
 - Testing infrastructure in place
 
-**Phase 2: Session Management & Fermentation Tracking** 🚧 **IN PROGRESS**
-- Session management implementation needed
-- Fermentation CRUD operations to be built
-- Protected routes to be added
+**Phase 2: Session Management & Fermentation Tracking** ✅ **COMPLETE**
+- Session management fully operational with tower-sessions and SQLite persistence
+- Fermentation CRUD operations implemented (create, list, get profiles)
+- Protected routes with authentication and session validation
+- User profile management (view, update)
+- Web interfaces for fermentation list and creation form
 
-**Phase 3: Advanced Features** 📋 **PLANNED**
+**Phase 3: Advanced Features** 🚧 **IN PROGRESS**
 - Temperature logging and charts
 - Photo upload functionality
 - Dashboard analytics
+- View individual fermentation details
+- Update/edit fermentation records
+- Delete fermentation functionality
 
 ## Project Structure
 
@@ -97,6 +102,19 @@ raugupatis-log/
   - Email/password verification
   - Secure password comparison
   - User information response
+  - Session creation with tower-sessions
+- **User logout API** at `/api/users/logout` with:
+  - Server-side session destruction
+  - Complete session cleanup
+- **User profile API** at `/api/users/profile` with:
+  - Update first name, last name, experience level
+  - Protected endpoint requiring authentication
+  - Validation for experience level values
+- **Fermentation API** at `/api/fermentations` and `/api/fermentation` with:
+  - List all fermentations for authenticated user (GET /api/fermentations)
+  - Create new fermentation (POST /api/fermentation)
+  - Get fermentation profiles (GET /api/fermentation/profiles)
+  - Full validation and authorization checks
 
 ### Database
 - **SQLite database** with connection management
@@ -117,13 +135,13 @@ raugupatis-log/
 - **Configuration validation** at startup
 
 ### Testing
-- **Unit tests** for authentication (password hashing, email validation)
+- **Unit tests** for authentication (password hashing, email validation) - 3 tests
 - **Integration tests** organized by domain following the application architecture:
   - **tests/common/mod.rs** - Shared test utilities and helper functions
-  - **tests/general.rs** - Infrastructure tests (health, home, dashboard endpoints)
-  - **tests/users.rs** - User domain tests (17 tests covering registration, login, logout, profile)
-  - **tests/fermentation.rs** - Fermentation domain tests (8 tests covering CRUD operations)
-- **28 passing integration tests** covering all main functionality
+  - **tests/general.rs** - Infrastructure tests (health, home, dashboard endpoints) - 5 tests
+  - **tests/users.rs** - User domain tests covering registration, login, logout, profile - 21 tests
+  - **tests/fermentation.rs** - Fermentation domain tests covering CRUD operations - 8 tests
+- **37 total passing tests** (3 unit tests + 34 integration tests) covering all main functionality
 - **Test database** using temporary SQLite files for isolation
 - **Domain-based test organization** reduces merge conflicts during parallel development
 
@@ -181,28 +199,52 @@ make clean         # Clean build artifacts
 - **/** - Beautiful home page with fermentation-themed styling
 - **/register** - User registration form
 - **/login** - User login form
-- **/dashboard** - Dashboard page (template ready, not yet with full functionality)
+- **/dashboard** - Dashboard page (protected, requires authentication)
+- **/profile** - User profile page for viewing and editing account information (protected)
+- **/fermentations** - List of all fermentations for the authenticated user (protected)
+- **/fermentation/new** - Form to create a new fermentation batch (protected)
 - **/health** - Health check endpoint (returns "OK")
 
-### API Endpoints (POST)
+### API Endpoints
+
+#### User Management (POST)
 - **/api/users/register** - Create new user account
-  - Accepts: `{ "email": "user@example.com", "password": "password123", "experience_level": "beginner" }`
+  - Accepts: `{ "email": "user@example.com", "password": "password123", "experience_level": "beginner", "first_name": "John", "last_name": "Doe" }`
   - Returns: User object on success (201), error message on failure
 - **/api/users/login** - Authenticate user
   - Accepts: `{ "email": "user@example.com", "password": "password123" }`
   - Returns: `{ "success": true/false, "user": {...}, "message": "..." }`
+- **/api/users/logout** - End user session
+  - Requires: Valid session
+  - Returns: Success message
+- **/api/users/profile** - Update user profile
+  - Requires: Valid session (protected)
+  - Accepts: `{ "first_name": "John", "last_name": "Doe", "experience_level": "intermediate" }`
+  - Returns: Updated user object
 
-## 🏗️ Ready for Implementation
+#### Fermentation Management (GET/POST)
+- **GET /api/fermentations** - List all fermentations for authenticated user
+  - Requires: Valid session (protected)
+  - Returns: Array of fermentation objects with profile information
+- **POST /api/fermentation** - Create new fermentation batch
+  - Requires: Valid session (protected)
+  - Accepts: `{ "profile_id": 1, "name": "My Kimchi Batch", "start_date": "2024-01-15T10:00:00Z", "target_end_date": "2024-01-20T10:00:00Z", "notes": "Using napa cabbage", "ingredients": "cabbage, salt, garlic, ginger" }`
+  - Returns: Created fermentation object (201)
+- **GET /api/fermentation/profiles** - Get all fermentation profile templates
+  - Returns: Array of predefined fermentation profiles (Pickles, Kombucha, Kimchi, etc.)
 
-The foundation is now complete with basic authentication working. Next steps for implementing core fermentation tracking features:
+## 🏗️ Next Steps for Phase 3 Implementation
 
-1. **Session management** - Add tower-sessions middleware for persistent login sessions
-2. **Protected routes** - Secure dashboard and fermentation endpoints with authentication
-3. **Fermentation CRUD operations** - Create, read, update, delete fermentations using the existing database schema
+The core application is now fully functional with authentication, session management, and basic fermentation tracking. Next steps for implementing advanced features:
+
+1. **View fermentation details** - Display individual fermentation page with complete history and status
+2. **Update/edit fermentation** - Allow users to modify fermentation details, status, and notes
+3. **Delete fermentation** - Remove fermentation records with confirmation dialog
 4. **Temperature logging** - Manual data point entry and visualization with charts
-5. **Photo uploads** - Document fermentation stages with file storage
-6. **Dashboard and analytics** - Interactive charts and progress tracking for active fermentations
-7. **User profile** - View and edit user settings, change password
+5. **Photo uploads** - Document fermentation stages with file storage and gallery display
+6. **Dashboard analytics** - Interactive charts and progress tracking for active fermentations with countdown timers
+7. **Advanced filtering** - Search and filter fermentations by type, date range, success rating, or ingredients
+8. **Password management** - Allow users to change their password securely
 
 ## 🧪 Testing Guidelines
 

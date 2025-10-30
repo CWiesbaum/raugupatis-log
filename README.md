@@ -27,20 +27,34 @@ Raugupatis Log is under active development. The core foundation and authenticati
   - **Kefir (Milk)**: 12-24 hours, 68-76°F, milk kefir grains
   - **Water Kefir**: 1-3 days, 68-76°F, water kefir grains
 
-## 🚧 In Progress / Planned Features
+### User Profile Management
+- **View profile**: Access personal profile page displaying account information and fermentation experience level
+- **Update profile**: Edit first name, last name, and experience level through dedicated API endpoint
+- **Profile validation**: Server-side validation ensures data integrity when updating profile information
+
+### Fermentation Logging
+- **Create new fermentation**: Start tracking a new batch with metadata including profile selection, name, start date, target end date, notes, and ingredients. Full validation ensures data integrity.
+- **List fermentations**: View all fermentations for the authenticated user through both web interface (/fermentations) and API endpoint (/api/fermentations)
+- **Browse fermentation profiles**: Access 7 predefined fermentation templates (Pickles, Kombucha, Kimchi, Sauerkraut, Sourdough, Kefir, Water Kefir) with optimal temperature ranges and timing guidance
+- **New fermentation form**: User-friendly web interface at /fermentation/new for creating fermentations with profile selection
+- **Protected fermentation routes**: All fermentation pages and API endpoints require authentication, redirecting to login when session is missing
+
+## 🚧 Planned Features (Phase 3)
 
 ### User Management
 - **"Remember me" functionality**: Extended session duration (30 days) for convenient access
 - **User Administration**: Administrative interface for managing users, viewing system statistics, and maintaining fermentation profile templates
 
-### Fermentation Logging
-- **Create new fermentation**: Start tracking a new batch with metadata including ingredients and initial conditions
+### Fermentation Tracking - Advanced Features
+- **View fermentation details**: Display individual fermentation with complete history, notes, and status tracking
+- **Update fermentation**: Edit fermentation details, notes, and status (active, paused, completed, failed)
 - **Add temperature data points**: Manual temperature logging for tracking fermentation progress
 - **Display temperature graphs**: Interactive charts showing temperature curves over time
-- **Photo uploads**: Document fermentation stages visually
+- **Photo uploads**: Document fermentation stages visually with file storage and management
 - **Finish fermentation**: Mark batches as complete with success ratings, taste profiles, and lessons learned
-- **Browse historical fermentations**: Search and filter past fermentations by type, date range, success rating, or ingredients
+- **Search and filter**: Advanced filtering by type, date range, success rating, or ingredients
 - **Countdown timer**: Daily countdown display with progress indicators and flexible completion tracking
+- **Delete fermentation**: Remove fermentation records with confirmation
 
 # Technology
 Raugupati Log follows the following architectural principles:
