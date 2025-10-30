@@ -278,7 +278,7 @@
         </form>
         
         <div class="back-link">
-            <a href="/dashboard">&larr; Back to Dashboard</a>
+            <a href="/fermentations">&larr; Back to My Fermentations</a>
         </div>
     </div>
 
@@ -378,11 +378,11 @@
                 }
                 
                 const result = await response.json();
-                showSuccess('Fermentation created successfully! Redirecting to dashboard...');
+                showSuccess('Fermentation created successfully! Redirecting to My Fermentations...');
                 
-                // Redirect to dashboard after a short delay
+                // Redirect to fermentations list after a short delay
                 setTimeout(() => {
-                    window.location.href = '/dashboard';
+                    window.location.href = '/fermentations';
                 }, 2000);
                 
             } catch (error) {
@@ -396,7 +396,7 @@
         // Handle cancel button
         document.getElementById('cancelButton').addEventListener('click', () => {
             if (confirm('Are you sure you want to cancel? Any unsaved changes will be lost.')) {
-                window.location.href = '/dashboard';
+                window.location.href = '/fermentations';
             }
         });
         
