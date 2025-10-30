@@ -3,6 +3,7 @@ use raugupatis_log::{config::AppConfig, database::Database, AppState};
 use std::sync::Arc;
 
 /// Creates a test app with a fresh database for integration testing
+#[allow(dead_code)]
 pub async fn create_test_app() -> Router {
     let app_state = create_test_app_state().await;
     raugupatis_log::create_router(app_state).await

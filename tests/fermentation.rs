@@ -12,7 +12,12 @@ async fn test_fermentation_list_page_redirects_when_not_logged_in() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/fermentations").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/fermentations")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -25,7 +30,12 @@ async fn test_fermentation_list_api_unauthorized() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/api/fermentations").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -61,7 +71,7 @@ async fn test_get_fermentation_profiles() {
 #[tokio::test]
 async fn test_create_fermentation_success() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register and login a user
     let register_body = json!({
         "email": "fermenter@example.com",
@@ -103,7 +113,7 @@ async fn test_create_fermentation_success() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Extract session cookie
     let cookie_header = response
         .headers()
@@ -129,7 +139,9 @@ async fn test_create_fermentation_success() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -163,7 +175,9 @@ async fn test_create_fermentation_unauthorized() {
                 .uri("/api/fermentation")
                 .method("POST")
                 .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -176,7 +190,7 @@ async fn test_create_fermentation_unauthorized() {
 #[tokio::test]
 async fn test_create_fermentation_invalid_profile() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register and login a user
     let register_body = json!({
         "email": "fermenter2@example.com",
@@ -218,7 +232,7 @@ async fn test_create_fermentation_invalid_profile() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Extract session cookie
     let cookie_header = response
         .headers()
@@ -241,7 +255,9 @@ async fn test_create_fermentation_invalid_profile() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -253,7 +269,7 @@ async fn test_create_fermentation_invalid_profile() {
 #[tokio::test]
 async fn test_create_fermentation_empty_name() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register and login a user
     let register_body = json!({
         "email": "fermenter3@example.com",
@@ -295,7 +311,7 @@ async fn test_create_fermentation_empty_name() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Extract session cookie
     let cookie_header = response
         .headers()
@@ -318,7 +334,9 @@ async fn test_create_fermentation_empty_name() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await

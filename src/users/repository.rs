@@ -32,12 +32,12 @@ impl UserRepository {
 
         let user_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
-            
+
             conn.execute(
                 "INSERT INTO users (email, password_hash, role, experience_level, first_name, last_name) VALUES (?1, ?2, ?3, ?4, ?5, ?6)",
                 rusqlite::params![&email, &password_hash, "user", &experience_level_str, &first_name, &last_name],
             )?;
-            
+
             let user_id = conn.last_insert_rowid();
             Ok(user_id)
         })
@@ -55,9 +55,9 @@ impl UserRepository {
 
         tokio::task::spawn_blocking(move || -> Result<Option<User>, Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
-            
+
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, created_at, updated_at 
+                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, is_locked, created_at, updated_at
                  FROM users WHERE email = ?1"
             )?;
 
@@ -70,8 +70,9 @@ impl UserRepository {
                     experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
                     first_name: row.get(5)?,
                     last_name: row.get(6)?,
-                    created_at: parse_datetime(row.get::<_, String>(7)?),
-                    updated_at: parse_datetime(row.get::<_, String>(8)?),
+                    is_locked: row.get::<_, i64>(7)? != 0,
+                    created_at: parse_datetime(row.get::<_, String>(8)?),
+                    updated_at: parse_datetime(row.get::<_, String>(9)?),
                 })
             }).optional()?;
 
@@ -88,9 +89,9 @@ impl UserRepository {
 
         tokio::task::spawn_blocking(move || -> Result<User, Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
-            
+
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, created_at, updated_at 
+                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, is_locked, created_at, updated_at
                  FROM users WHERE id = ?1"
             )?;
 
@@ -103,8 +104,9 @@ impl UserRepository {
                     experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
                     first_name: row.get(5)?,
                     last_name: row.get(6)?,
-                    created_at: parse_datetime(row.get::<_, String>(7)?),
-                    updated_at: parse_datetime(row.get::<_, String>(8)?),
+                    is_locked: row.get::<_, i64>(7)? != 0,
+                    created_at: parse_datetime(row.get::<_, String>(8)?),
+                    updated_at: parse_datetime(row.get::<_, String>(9)?),
                 })
             })?;
 
@@ -123,7 +125,7 @@ impl UserRepository {
 
         tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
-            
+
             conn.execute(
                 "UPDATE users SET experience_level = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2",
                 rusqlite::params![&experience_level_str, user_id],
@@ -148,7 +150,7 @@ impl UserRepository {
 
         tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
             let conn = db.get_connection().lock().unwrap();
-            
+
             conn.execute(
                 "UPDATE users SET experience_level = ?1, first_name = ?2, last_name = ?3, updated_at = CURRENT_TIMESTAMP WHERE id = ?4",
                 rusqlite::params![&experience_level_str, &first_name, &last_name, user_id],

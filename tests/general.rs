@@ -11,7 +11,12 @@ async fn test_health_endpoint() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/health")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -35,7 +40,12 @@ async fn test_dashboard_page_loads() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/dashboard").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/dashboard")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -123,8 +133,14 @@ async fn test_dashboard_displays_user_names() {
     let body_str = String::from_utf8(body.to_vec()).unwrap();
 
     // Verify that first name and last name are displayed
-    assert!(body_str.contains("John Doe"), "Dashboard should display full name 'John Doe'");
-    assert!(body_str.contains("john.doe@example.com"), "Dashboard should display email");
+    assert!(
+        body_str.contains("John Doe"),
+        "Dashboard should display full name 'John Doe'"
+    );
+    assert!(
+        body_str.contains("john.doe@example.com"),
+        "Dashboard should display email"
+    );
 }
 
 #[tokio::test]
@@ -205,8 +221,20 @@ async fn test_dashboard_without_user_names() {
     let body_str = String::from_utf8(body.to_vec()).unwrap();
 
     // Verify that email is displayed but name labels are not shown
-    assert!(body_str.contains("noname@example.com"), "Dashboard should display email");
-    assert!(!body_str.contains("<strong>Name:</strong>"), "Dashboard should not display Name label when names are not provided");
-    assert!(!body_str.contains("<strong>First Name:</strong>"), "Dashboard should not display First Name label when not provided");
-    assert!(!body_str.contains("<strong>Last Name:</strong>"), "Dashboard should not display Last Name label when not provided");
+    assert!(
+        body_str.contains("noname@example.com"),
+        "Dashboard should display email"
+    );
+    assert!(
+        !body_str.contains("<strong>Name:</strong>"),
+        "Dashboard should not display Name label when names are not provided"
+    );
+    assert!(
+        !body_str.contains("<strong>First Name:</strong>"),
+        "Dashboard should not display First Name label when not provided"
+    );
+    assert!(
+        !body_str.contains("<strong>Last Name:</strong>"),
+        "Dashboard should not display Last Name label when not provided"
+    );
 }

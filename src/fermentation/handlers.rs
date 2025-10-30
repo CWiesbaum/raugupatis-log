@@ -1,8 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    Json,
-};
+use axum::{extract::State, http::StatusCode, Json};
 use tower_sessions::Session;
 
 use crate::fermentation::models::{CreateFermentationRequest, Fermentation, FermentationResponse};
@@ -23,7 +19,7 @@ pub async fn list_fermentations(
     let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
 
     let repo = FermentationRepository::new(state.db.clone());
-    
+
     match repo.find_all_by_user(user.user_id).await {
         Ok(fermentations) => Ok(Json(fermentations)),
         Err(e) => {

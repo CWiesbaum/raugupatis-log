@@ -1,10 +1,10 @@
-use askama::Template;
-use axum::response::{Html, Redirect};
-use axum::extract::State;
-use tower_sessions::Session;
-use crate::users::{UserSession, UserResponse};
 use crate::users::repository::UserRepository;
+use crate::users::{UserResponse, UserSession};
 use crate::AppState;
+use askama::Template;
+use axum::extract::State;
+use axum::response::{Html, Redirect};
+use tower_sessions::Session;
 
 #[derive(Template)]
 #[template(path = "home.html")]
@@ -18,8 +18,12 @@ pub async fn home_handler() -> Html<String> {
         title: "Raugupatis Log".to_string(),
         message: "Welcome to Raugupatis Log - Your Fermentation Tracking Companion!".to_string(),
     };
-    
-    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+
+    Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    )
 }
 
 #[derive(Template)]
@@ -52,6 +56,10 @@ pub async fn dashboard_handler(
         title: "Dashboard - Raugupatis Log".to_string(),
         user: UserResponse::from(user),
     };
-    
-    Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
+
+    Ok(Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    ))
 }

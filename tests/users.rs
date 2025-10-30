@@ -43,7 +43,7 @@ async fn test_register_user_success() {
 async fn test_register_user_duplicate_email() {
     // Use shared app state for both requests to test duplicate detection
     let app_state = common::create_test_app_state().await;
-    
+
     let request_body = json!({
         "email": "duplicate@example.com",
         "password": "securepassword123"
@@ -133,7 +133,7 @@ async fn test_register_user_short_password() {
 #[tokio::test]
 async fn test_login_success() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register a user
     let register_body = json!({
         "email": "logintest@example.com",
@@ -189,7 +189,7 @@ async fn test_login_success() {
 #[tokio::test]
 async fn test_login_wrong_password() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register a user
     let register_body = json!({
         "email": "wrongpass@example.com",
@@ -278,7 +278,12 @@ async fn test_register_page_endpoint() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/register").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/register")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -322,7 +327,12 @@ async fn test_login_page_loads() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/login").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/login")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
@@ -332,7 +342,7 @@ async fn test_login_page_loads() {
 #[tokio::test]
 async fn test_logout() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register a user
     let register_body = json!({
         "email": "logouttest@example.com",
@@ -374,7 +384,7 @@ async fn test_logout() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Extract session cookie
     let cookies = response.headers().get("set-cookie");
     assert!(cookies.is_some(), "Login should set a session cookie");
@@ -441,7 +451,7 @@ async fn test_register_user_default_experience_level() {
 #[tokio::test]
 async fn test_login_returns_experience_level() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register with intermediate experience level
     let register_body = json!({
         "email": "intermediate@example.com",
@@ -500,13 +510,18 @@ async fn test_profile_page_redirect_when_not_authenticated() {
     let app = common::create_test_app().await;
 
     let response = app
-        .oneshot(Request::builder().uri("/profile").body(Body::empty()).unwrap())
+        .oneshot(
+            Request::builder()
+                .uri("/profile")
+                .body(Body::empty())
+                .unwrap(),
+        )
         .await
         .unwrap();
 
     // Profile page should redirect to login when not authenticated
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    
+
     // Verify redirect location
     let location = response.headers().get("location");
     assert!(location.is_some());
@@ -516,7 +531,7 @@ async fn test_profile_page_redirect_when_not_authenticated() {
 #[tokio::test]
 async fn test_update_profile_success() {
     let app_state = common::create_test_app_state().await;
-    
+
     // First register a user
     let register_body = json!({
         "email": "profiletest@example.com",
@@ -559,7 +574,7 @@ async fn test_update_profile_success() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     // Extract session cookie
     let cookies = response.headers().get("set-cookie");
     assert!(cookies.is_some(), "Login should set a session cookie");
@@ -622,7 +637,7 @@ async fn test_update_profile_unauthorized() {
 #[tokio::test]
 async fn test_update_profile_invalid_experience_level() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register and login
     let register_body = json!({
         "email": "invalidexp@example.com",
@@ -663,7 +678,7 @@ async fn test_update_profile_invalid_experience_level() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     let cookies = response.headers().get("set-cookie");
     assert!(cookies.is_some());
     let cookie_value = cookies.unwrap().to_str().unwrap();
@@ -762,7 +777,7 @@ async fn test_register_user_without_names() {
 #[tokio::test]
 async fn test_update_profile_with_names() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register a user without names
     let register_body = json!({
         "email": "updatenames@example.com",
@@ -804,7 +819,7 @@ async fn test_update_profile_with_names() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
+
     let cookies = response.headers().get("set-cookie");
     assert!(cookies.is_some());
     let cookie_value = cookies.unwrap().to_str().unwrap();
@@ -846,7 +861,7 @@ async fn test_update_profile_with_names() {
 #[tokio::test]
 async fn test_login_returns_user_names() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register with names
     let register_body = json!({
         "email": "withnames@example.com",
@@ -905,7 +920,7 @@ async fn test_login_returns_user_names() {
 #[tokio::test]
 async fn test_login_without_remember_me() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register a user
     let register_body = json!({
         "email": "noremember@example.com",
@@ -960,7 +975,7 @@ async fn test_login_without_remember_me() {
 #[tokio::test]
 async fn test_login_with_remember_me_true() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register a user
     let register_body = json!({
         "email": "rememberme@example.com",
@@ -1020,7 +1035,7 @@ async fn test_login_with_remember_me_true() {
 #[tokio::test]
 async fn test_login_with_remember_me_false() {
     let app_state = common::create_test_app_state().await;
-    
+
     // Register a user
     let register_body = json!({
         "email": "dontremember@example.com",
