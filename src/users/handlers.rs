@@ -5,7 +5,8 @@ use axum::{
     Json,
 };
 use serde_json::json;
-use tower_sessions::Session;
+use time::Duration;
+use tower_sessions::{Expiry, Session};
 
 use crate::users::auth::verify_password;
 use crate::users::models::{CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse, UpdateProfileRequest, UserResponse, UserSession};
@@ -162,6 +163,16 @@ pub async fn login_user(
                 email: user.email.clone(),
                 role: user.role.clone(),
             };
+            
+            // Set session expiry based on remember_me flag
+            // Default: 24 hours, Remember me: 5 days (120 hours)
+            let expiry_duration = if request.remember_me {
+                Duration::hours(120) // 5 days
+            } else {
+                Duration::hours(24)  // 1 day (default)
+            };
+            
+            session.set_expiry(Some(Expiry::OnInactivity(expiry_duration)));
             
             // Store session data
             session.insert("user", user_session)

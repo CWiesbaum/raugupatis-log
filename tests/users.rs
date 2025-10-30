@@ -901,3 +901,174 @@ async fn test_login_returns_user_names() {
     assert_eq!(body_json["user"]["first_name"], "Alice");
     assert_eq!(body_json["user"]["last_name"], "Wonder");
 }
+
+#[tokio::test]
+async fn test_login_without_remember_me() {
+    let app_state = common::create_test_app_state().await;
+    
+    // Register a user
+    let register_body = json!({
+        "email": "noremember@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login without remember_me (defaults to false)
+    let login_body = json!({
+        "email": "noremember@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "noremember@example.com");
+}
+
+#[tokio::test]
+async fn test_login_with_remember_me_true() {
+    let app_state = common::create_test_app_state().await;
+    
+    // Register a user
+    let register_body = json!({
+        "email": "rememberme@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login with remember_me set to true
+    let login_body = json!({
+        "email": "rememberme@example.com",
+        "password": "securepassword123",
+        "remember_me": true
+    });
+
+    let app2 = raugupatis_log::create_router(app_state).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Extract cookie headers before consuming the response
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some(), "Login with remember_me should set a session cookie");
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "rememberme@example.com");
+}
+
+#[tokio::test]
+async fn test_login_with_remember_me_false() {
+    let app_state = common::create_test_app_state().await;
+    
+    // Register a user
+    let register_body = json!({
+        "email": "dontremember@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login with remember_me explicitly set to false
+    let login_body = json!({
+        "email": "dontremember@example.com",
+        "password": "securepassword123",
+        "remember_me": false
+    });
+
+    let app2 = raugupatis_log::create_router(app_state).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "dontremember@example.com");
+}
