@@ -46,4 +46,7 @@ temp/
 
 # Backup files
 *.bak
-*.backupcookies.txt
+*.backup
+
+# Test cookies
+cookies.txt
