@@ -52,7 +52,11 @@ raugupatis-log/
 │   ├── setup-dev.sh         # Development environment setup script
 │   └── deploy.sh            # Production deployment script
 ├── tests/
-│   └── integration_tests.rs # Integration test framework
+│   ├── common/              # Shared test utilities
+│   │   └── mod.rs           # Common test helper functions
+│   ├── general.rs           # Infrastructure tests (health, home, dashboard)
+│   ├── users.rs             # User domain integration tests
+│   └── fermentation.rs      # Fermentation domain integration tests
 ├── Cargo.toml               # Rust dependencies and project metadata
 ├── Dockerfile               # Multi-stage OCI container specification
 ├── docker-compose.yml       # Docker Compose for local development
@@ -114,9 +118,14 @@ raugupatis-log/
 
 ### Testing
 - **Unit tests** for authentication (password hashing, email validation)
-- **Integration tests** for all API endpoints and pages
-- **13 passing tests** covering registration and login flows
-- **Test database** using in-memory SQLite for isolation
+- **Integration tests** organized by domain following the application architecture:
+  - **tests/common/mod.rs** - Shared test utilities and helper functions
+  - **tests/general.rs** - Infrastructure tests (health, home, dashboard endpoints)
+  - **tests/users.rs** - User domain tests (17 tests covering registration, login, logout, profile)
+  - **tests/fermentation.rs** - Fermentation domain tests (8 tests covering CRUD operations)
+- **28 passing integration tests** covering all main functionality
+- **Test database** using temporary SQLite files for isolation
+- **Domain-based test organization** reduces merge conflicts during parallel development
 
 ### Containerization
 - **Multi-stage Dockerfile** for optimal image size and security
@@ -194,6 +203,80 @@ The foundation is now complete with basic authentication working. Next steps for
 5. **Photo uploads** - Document fermentation stages with file storage
 6. **Dashboard and analytics** - Interactive charts and progress tracking for active fermentations
 7. **User profile** - View and edit user settings, change password
+
+## 🧪 Testing Guidelines
+
+When adding new features, follow these testing patterns:
+
+### Integration Test Organization
+
+Integration tests are organized by domain to match the application architecture and reduce merge conflicts:
+
+1. **Common utilities** (`tests/common/mod.rs`):
+   - `create_test_app()` - Creates a fresh app instance for testing
+   - `create_test_app_state()` - Creates app state with a temporary test database
+   - Add new shared utilities here as needed
+
+2. **Domain-specific test files**:
+   - `tests/users.rs` - All user-related tests (registration, login, profile, etc.)
+   - `tests/fermentation.rs` - All fermentation-related tests (CRUD, profiles, etc.)
+   - `tests/general.rs` - Infrastructure tests (health checks, home page, etc.)
+
+### Adding Tests for New Features
+
+When adding a new feature:
+
+1. **Identify the domain** - Determine which domain your feature belongs to (users, fermentation, etc.)
+2. **Add tests to the appropriate domain file** - Keep related tests together
+3. **Use common utilities** - Reuse `create_test_app()` and `create_test_app_state()` from `tests/common/mod.rs`
+4. **Follow naming conventions** - Test names should clearly describe what they test (e.g., `test_create_fermentation_unauthorized`)
+5. **Test edge cases** - Include tests for success, failure, validation, and authorization scenarios
+
+### Example Test Structure
+
+```rust
+mod common;
+
+use axum::{body::Body, http::{Request, StatusCode}};
+use serde_json::json;
+use tower::ServiceExt;
+
+#[tokio::test]
+async fn test_your_feature() {
+    let app = common::create_test_app().await;
+    
+    let request_body = json!({"key": "value"});
+    
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/your/endpoint")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+    
+    assert_eq!(response.status(), StatusCode::OK);
+}
+```
+
+### For New Domains
+
+If creating a new domain (e.g., `temperature_logs`, `photos`):
+
+1. Create a new test file: `tests/your_domain.rs`
+2. Add `mod common;` at the top
+3. Follow the same pattern as existing domain test files
+4. Add all tests for that domain to this single file
+
+This organization ensures:
+- **Reduced merge conflicts** - Developers working on different domains rarely touch the same files
+- **Better maintainability** - Related tests are grouped together
+- **Clearer test output** - Test results are organized by domain
+- **Consistent patterns** - Easy to find and add tests for any feature
 
 ## 🔧 Technology Stack Implemented
 
