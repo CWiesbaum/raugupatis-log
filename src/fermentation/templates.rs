@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::extract::State;
+use axum::extract::{Path, State};
 use axum::response::{Html, Redirect};
 use tower_sessions::Session;
 
@@ -70,6 +70,52 @@ pub async fn new_fermentation_handler(session: Session) -> Result<Html<String>, 
                 .render()
                 .unwrap_or_else(|_| "Template render error".to_string()),
         ))
+    } else {
+        // Redirect to login if not authenticated
+        Err(Redirect::to("/login"))
+    }
+}
+
+#[derive(Template)]
+#[template(path = "fermentation/detail.html")]
+pub struct FermentationDetailTemplate {
+    pub title: String,
+    pub fermentation: Fermentation,
+}
+
+pub async fn fermentation_detail_handler(
+    State(state): State<AppState>,
+    session: Session,
+    Path(id): Path<i64>,
+) -> Result<Html<String>, Redirect> {
+    // Get user from session
+    let user_session: Option<UserSession> = session.get("user").await.unwrap_or(None);
+
+    if let Some(user) = user_session {
+        let repo = FermentationRepository::new(state.db.clone());
+
+        // Fetch the fermentation by ID, ensuring it belongs to the current user
+        match repo.find_by_id(id, user.user_id).await {
+            Ok(Some(fermentation)) => {
+                let template = FermentationDetailTemplate {
+                    title: format!("{} - Raugupatis Log", fermentation.name),
+                    fermentation,
+                };
+
+                Ok(Html(template.render().unwrap_or_else(|e| {
+                    tracing::error!("Failed to render fermentation detail template: {}", e);
+                    "Error rendering fermentation detail".to_string()
+                })))
+            }
+            Ok(None) => {
+                // Fermentation not found or doesn't belong to this user
+                Err(Redirect::to("/fermentations"))
+            }
+            Err(e) => {
+                tracing::error!("Error fetching fermentation: {}", e);
+                Err(Redirect::to("/fermentations"))
+            }
+        }
     } else {
         // Redirect to login if not authenticated
         Err(Redirect::to("/login"))

@@ -104,12 +104,18 @@
             gap: 1.5rem;
             margin-top: 2rem;
         }
+        .fermentation-card-link {
+            display: block;
+            text-decoration: none;
+            color: inherit;
+        }
         .fermentation-card {
             background: rgba(255, 255, 255, 0.15);
             border-radius: 15px;
             padding: 1.5rem;
             transition: all 0.3s ease;
             border: 2px solid rgba(255, 255, 255, 0.2);
+            cursor: pointer;
         }
         .fermentation-card:hover {
             transform: translateY(-5px);
@@ -248,59 +254,61 @@
         {% else %}
         <div class="fermentations-grid">
             {% for fermentation in fermentations %}
-            <div class="fermentation-card">
-                <div class="card-header">
-                    <h3 class="card-title">{{ fermentation.name }}</h3>
-                    <span class="status-badge status-{{ fermentation.status.as_str() }}">
-                        {{ fermentation.status.as_str() }}
-                    </span>
-                </div>
-                
-                {% match fermentation.profile_name %}
-                {% when Some with (profile_name) %}
-                <div class="profile-tag">
-                    📋 {{ profile_name }}
-                    {% match fermentation.profile_type %}
-                    {% when Some with (profile_type) %}
-                    ({{ profile_type }})
+            <a href="/fermentation/{{ fermentation.id }}" class="fermentation-card-link">
+                <div class="fermentation-card">
+                    <div class="card-header">
+                        <h3 class="card-title">{{ fermentation.name }}</h3>
+                        <span class="status-badge status-{{ fermentation.status.as_str() }}">
+                            {{ fermentation.status.as_str() }}
+                        </span>
+                    </div>
+                    
+                    {% match fermentation.profile_name %}
+                    {% when Some with (profile_name) %}
+                    <div class="profile-tag">
+                        📋 {{ profile_name }}
+                        {% match fermentation.profile_type %}
+                        {% when Some with (profile_type) %}
+                        ({{ profile_type }})
+                        {% when None %}{% endmatch %}
+                    </div>
+                    {% when None %}{% endmatch %}
+
+                    <div class="card-meta">
+                        <strong>Started:</strong> {{ fermentation.start_date.format("%B %d, %Y") }}
+                    </div>
+
+                    {% match fermentation.target_end_date %}
+                    {% when Some with (target_end) %}
+                    <div class="card-meta">
+                        <strong>Target End:</strong> {{ target_end.format("%B %d, %Y") }}
+                    </div>
+                    {% when None %}{% endmatch %}
+
+                    {% match fermentation.actual_end_date %}
+                    {% when Some with (actual_end) %}
+                    <div class="card-meta">
+                        <strong>Completed:</strong> {{ actual_end.format("%B %d, %Y") }}
+                    </div>
+                    {% when None %}{% endmatch %}
+
+                    {% match fermentation.success_rating %}
+                    {% when Some with (rating) %}
+                    <div class="card-meta">
+                        <strong>Rating:</strong> {{ rating }}/5 ⭐
+                    </div>
+                    {% when None %}{% endmatch %}
+
+                    {% match fermentation.notes %}
+                    {% when Some with (notes) %}
+                        {% if !notes.is_empty() %}
+                        <div class="card-notes">
+                            "{{ notes }}"
+                        </div>
+                        {% endif %}
                     {% when None %}{% endmatch %}
                 </div>
-                {% when None %}{% endmatch %}
-
-                <div class="card-meta">
-                    <strong>Started:</strong> {{ fermentation.start_date.format("%B %d, %Y") }}
-                </div>
-
-                {% match fermentation.target_end_date %}
-                {% when Some with (target_end) %}
-                <div class="card-meta">
-                    <strong>Target End:</strong> {{ target_end.format("%B %d, %Y") }}
-                </div>
-                {% when None %}{% endmatch %}
-
-                {% match fermentation.actual_end_date %}
-                {% when Some with (actual_end) %}
-                <div class="card-meta">
-                    <strong>Completed:</strong> {{ actual_end.format("%B %d, %Y") }}
-                </div>
-                {% when None %}{% endmatch %}
-
-                {% match fermentation.success_rating %}
-                {% when Some with (rating) %}
-                <div class="card-meta">
-                    <strong>Rating:</strong> {{ rating }}/5 ⭐
-                </div>
-                {% when None %}{% endmatch %}
-
-                {% match fermentation.notes %}
-                {% when Some with (notes) %}
-                    {% if !notes.is_empty() %}
-                    <div class="card-notes">
-                        "{{ notes }}"
-                    </div>
-                    {% endif %}
-                {% when None %}{% endmatch %}
-            </div>
+            </a>
             {% endfor %}
         </div>
         {% endif %}
