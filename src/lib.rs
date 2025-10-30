@@ -47,9 +47,11 @@ pub async fn create_router(app_state: AppState) -> Router {
         .route("/health", get(health_handler))
         .route("/login", get(crate::users::login_handler))
         .route("/dashboard", get(crate::templates::dashboard_handler))
+        .route("/profile", get(crate::users::profile_handler))
         .route("/api/users/register", post(crate::users::register_user))
         .route("/api/users/login", post(crate::users::login_user))
         .route("/api/users/logout", post(crate::users::logout_user))
+        .route("/api/users/profile", post(crate::users::update_profile))
         .with_state(app_state)
         .layer(
             ServiceBuilder::new()
