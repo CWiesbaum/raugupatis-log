@@ -223,6 +223,20 @@
                 <div id="confirmPasswordError" class="validation-message error"></div>
             </div>
             
+            <div class="form-group">
+                <label for="experienceLevel">Fermentation Experience Level</label>
+                <select 
+                    id="experienceLevel" 
+                    name="experienceLevel"
+                    required
+                >
+                    <option value="beginner">Beginner - Just getting started</option>
+                    <option value="intermediate">Intermediate - Some experience</option>
+                    <option value="advanced">Advanced - Experienced fermenter</option>
+                </select>
+                <div id="experienceLevelError" class="validation-message error"></div>
+            </div>
+            
             <button type="submit" id="submitButton" disabled>Register</button>
         </form>
         
@@ -236,6 +250,7 @@
         const emailInput = document.getElementById('email');
         const passwordInput = document.getElementById('password');
         const confirmPasswordInput = document.getElementById('confirmPassword');
+        const experienceLevelSelect = document.getElementById('experienceLevel');
         const submitButton = document.getElementById('submitButton');
         
         const emailError = document.getElementById('emailError');
@@ -248,7 +263,8 @@
         let validationState = {
             email: false,
             password: false,
-            confirmPassword: false
+            confirmPassword: false,
+            experienceLevel: true // Valid by default since we have a default option
         };
         
         // Email validation
@@ -261,7 +277,8 @@
         function updateSubmitButton() {
             const allValid = validationState.email && 
                            validationState.password && 
-                           validationState.confirmPassword;
+                           validationState.confirmPassword &&
+                           validationState.experienceLevel;
             submitButton.disabled = !allValid;
         }
         
@@ -335,7 +352,8 @@
             
             const formData = {
                 email: emailInput.value.trim(),
-                password: passwordInput.value
+                password: passwordInput.value,
+                experience_level: experienceLevelSelect.value
             };
             
             try {
@@ -356,7 +374,7 @@
                     
                     // Reset form
                     form.reset();
-                    validationState = { email: false, password: false, confirmPassword: false };
+                    validationState = { email: false, password: false, confirmPassword: false, experienceLevel: true };
                     
                     // Redirect to home after 2 seconds
                     setTimeout(() => {

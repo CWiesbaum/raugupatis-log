@@ -471,3 +471,127 @@ async fn test_logout() {
     assert_eq!(body_json["success"], true);
     assert_eq!(body_json["message"], "Logout successful");
 }
+
+#[tokio::test]
+async fn test_register_user_with_experience_level() {
+    let app = create_test_app().await;
+
+    let request_body = json!({
+        "email": "experienced@example.com",
+        "password": "securepassword123",
+        "experience_level": "advanced"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "experienced@example.com");
+    assert_eq!(body_json["experience_level"], "advanced");
+}
+
+#[tokio::test]
+async fn test_register_user_default_experience_level() {
+    let app = create_test_app().await;
+
+    // Register without specifying experience level
+    let request_body = json!({
+        "email": "default@example.com",
+        "password": "securepassword123"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "default@example.com");
+    // Default should be "beginner"
+    assert_eq!(body_json["experience_level"], "beginner");
+}
+
+#[tokio::test]
+async fn test_login_returns_experience_level() {
+    let app_state = create_test_app_state().await;
+    
+    // Register with intermediate experience level
+    let register_body = json!({
+        "email": "intermediate@example.com",
+        "password": "securepassword123",
+        "experience_level": "intermediate"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login and check if experience level is returned
+    let login_body = json!({
+        "email": "intermediate@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "intermediate@example.com");
+    assert_eq!(body_json["user"]["experience_level"], "intermediate");
+}
