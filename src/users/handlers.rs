@@ -174,7 +174,6 @@ pub async fn login_user(
                 email: user.email.clone(),
                 role: user.role.clone(),
             };
-
             // Set session expiry based on remember_me flag
             // Default: 24 hours, Remember me: 5 days (120 hours)
             let expiry_duration = if request.remember_me {

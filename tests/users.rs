@@ -1021,10 +1021,7 @@ async fn test_login_with_remember_me_true() {
 
     // Extract cookie headers before consuming the response
     let cookies = response.headers().get("set-cookie");
-    assert!(
-        cookies.is_some(),
-        "Login with remember_me should set a session cookie"
-    );
+    assert!(cookies.is_some(), "Login with remember_me should set a session cookie");
 
     let body = axum::body::to_bytes(response.into_body(), usize::MAX)
         .await
