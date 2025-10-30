@@ -473,6 +473,31 @@ async fn test_logout() {
 }
 
 #[tokio::test]
+async fn test_fermentation_list_page_redirects_when_not_logged_in() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/fermentations").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    // Should redirect to login when not authenticated
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn test_fermentation_list_api_unauthorized() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/api/fermentations").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    // API should return 401 when not authenticated
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
 async fn test_register_user_with_experience_level() {
     let app = create_test_app().await;
 
