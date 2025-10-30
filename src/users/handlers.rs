@@ -8,7 +8,7 @@ use serde_json::json;
 use tower_sessions::Session;
 
 use crate::users::auth::verify_password;
-use crate::users::models::{CreateUserRequest, LoginRequest, LoginResponse, UserResponse, UserSession};
+use crate::users::models::{CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse, UpdateProfileRequest, UserResponse, UserSession};
 use crate::users::repository::UserRepository;
 use crate::AppState;
 
@@ -18,6 +18,7 @@ pub enum ApiError {
     ValidationError(String),
     DatabaseError(String),
     InternalError(String),
+    Unauthorized,
 }
 
 impl IntoResponse for ApiError {
@@ -30,6 +31,7 @@ impl IntoResponse for ApiError {
             ApiError::ValidationError(msg) => (StatusCode::BAD_REQUEST, msg),
             ApiError::DatabaseError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
             ApiError::InternalError(msg) => (StatusCode::INTERNAL_SERVER_ERROR, msg),
+            ApiError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unauthorized".to_string()),
         };
 
         let body = Json(json!({
@@ -182,6 +184,38 @@ pub async fn login_user(
             e
         ))),
     }
+}
+
+pub async fn update_profile(
+    session: Session,
+    State(state): State<AppState>,
+    Json(request): Json<UpdateProfileRequest>,
+) -> Result<Json<UserResponse>, ApiError> {
+    // Check if user is authenticated
+    let user_session: UserSession = session
+        .get("user")
+        .await
+        .map_err(|e| ApiError::InternalError(format!("Failed to get session: {}", e)))?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Validate experience level
+    let valid_levels = ["beginner", "intermediate", "advanced"];
+    if !valid_levels.contains(&request.experience_level.as_str()) {
+        return Err(ApiError::ValidationError(
+            "Invalid experience level. Must be 'beginner', 'intermediate', or 'advanced'".to_string(),
+        ));
+    }
+
+    let experience_level = ExperienceLevel::from(request.experience_level);
+    let user_repo = UserRepository::new(state.db.clone());
+
+    // Update the user's experience level
+    let updated_user = user_repo
+        .update_experience_level(user_session.user_id, experience_level)
+        .await
+        .map_err(|e| ApiError::DatabaseError(format!("Failed to update profile: {}", e)))?;
+
+    Ok(Json(UserResponse::from(updated_user)))
 }
 
 #[cfg(test)]

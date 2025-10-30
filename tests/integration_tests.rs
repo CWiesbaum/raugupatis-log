@@ -471,3 +471,198 @@ async fn test_logout() {
     assert_eq!(body_json["success"], true);
     assert_eq!(body_json["message"], "Logout successful");
 }
+
+#[tokio::test]
+async fn test_profile_page_redirect_when_not_authenticated() {
+    let app = create_test_app().await;
+
+    let response = app
+        .oneshot(Request::builder().uri("/profile").body(Body::empty()).unwrap())
+        .await
+        .unwrap();
+
+    // Profile page should redirect to login when not authenticated
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    
+    // Verify redirect location
+    let location = response.headers().get("location");
+    assert!(location.is_some());
+    assert_eq!(location.unwrap(), "/login");
+}
+
+#[tokio::test]
+async fn test_update_profile_success() {
+    let app_state = create_test_app_state().await;
+    
+    // First register a user
+    let register_body = json!({
+        "email": "profiletest@example.com",
+        "password": "securepassword123",
+        "experience_level": "beginner"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login to get session
+    let login_body = json!({
+        "email": "profiletest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    
+    // Extract session cookie
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some(), "Login should set a session cookie");
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Update profile with session cookie
+    let update_body = json!({
+        "experience_level": "advanced"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "profiletest@example.com");
+    assert_eq!(body_json["experience_level"], "advanced");
+}
+
+#[tokio::test]
+async fn test_update_profile_unauthorized() {
+    let app = create_test_app().await;
+
+    let update_body = json!({
+        "experience_level": "advanced"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return unauthorized when no session
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_update_profile_invalid_experience_level() {
+    let app_state = create_test_app_state().await;
+    
+    // Register and login
+    let register_body = json!({
+        "email": "invalidexp@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "invalidexp@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+    
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Try to update with invalid experience level
+    let update_body = json!({
+        "experience_level": "invalid"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
