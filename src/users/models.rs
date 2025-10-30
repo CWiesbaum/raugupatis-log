@@ -18,6 +18,12 @@ impl UserRole {
     }
 }
 
+impl std::fmt::Display for UserRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
 impl From<String> for UserRole {
     fn from(s: String) -> Self {
         match s.as_str() {
@@ -42,6 +48,22 @@ impl ExperienceLevel {
             ExperienceLevel::Intermediate => "intermediate",
             ExperienceLevel::Advanced => "advanced",
         }
+    }
+
+    pub fn is_valid(s: &str) -> bool {
+        matches!(s, "beginner" | "intermediate" | "advanced")
+    }
+}
+
+impl std::fmt::Display for ExperienceLevel {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl PartialEq<&str> for ExperienceLevel {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
     }
 }
 
@@ -114,4 +136,9 @@ pub struct UserSession {
     pub user_id: i64,
     pub email: String,
     pub role: UserRole,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateProfileRequest {
+    pub experience_level: String,
 }

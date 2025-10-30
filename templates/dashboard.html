@@ -182,9 +182,11 @@
             <h3>Your Profile</h3>
             <div class="info-item"><strong>Email:</strong> <span id="userEmail"></span></div>
             <div class="info-item"><strong>Role:</strong> <span id="userRole"></span></div>
+            <div class="info-item"><strong>Experience Level:</strong> <span id="userExperienceLevel"></span></div>
         </div>
         
         <div class="actions">
+            <a href="/profile" class="action-button">Edit Profile</a>
             <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Start New Fermentation</a>
             <a href="/fermentations" class="action-button">View My Fermentations</a>
             <a href="#" class="action-button" onclick="alert('Coming soon!'); return false;">Browse Recipes</a>
@@ -197,6 +199,12 @@
     </div>
 
     <script>
+        // Helper function to capitalize first letter
+        function capitalizeFirst(str) {
+            if (!str) return '';
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
         // Load user info from session storage
         const userJson = sessionStorage.getItem('user');
         if (userJson) {
@@ -215,6 +223,10 @@
                 
                 document.getElementById('userEmail').textContent = user.email || 'N/A';
                 document.getElementById('userRole').textContent = user.role || 'user';
+                
+                // Display experience level with proper formatting
+                const experienceLevel = user.experience_level || 'beginner';
+                document.getElementById('userExperienceLevel').textContent = capitalizeFirst(experienceLevel);
             } catch (error) {
                 console.error('Error parsing user data:', error);
             }
