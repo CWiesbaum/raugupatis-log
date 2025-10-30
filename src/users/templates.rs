@@ -82,3 +82,29 @@ pub async fn profile_handler(
             .unwrap_or_else(|_| "Template render error".to_string()),
     ))
 }
+
+#[derive(Template)]
+#[template(path = "users/change_password.html")]
+pub struct ChangePasswordTemplate {
+    pub title: String,
+}
+
+pub async fn change_password_handler(session: Session) -> Result<Html<String>, Redirect> {
+    // Check if user is authenticated
+    let _user_session: UserSession = session
+        .get("user")
+        .await
+        .ok()
+        .flatten()
+        .ok_or_else(|| Redirect::to("/login"))?;
+
+    let template = ChangePasswordTemplate {
+        title: "Change Password - Raugupatis Log".to_string(),
+    };
+
+    Ok(Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    ))
+}
