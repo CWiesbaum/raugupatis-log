@@ -188,7 +188,10 @@ tests/
 - **Unit Tests**: Built-in `#[cfg(test)]` with `tokio::test` for async
 - **Integration Tests**: Domain-organized files using Axum's test helpers
 - **Property Testing**: `proptest` for fermentation state validation
-- **Database Tests**: Temporary SQLite files for isolation (not in-memory, to match production)
+- **Database Tests**: Temporary SQLite files for isolation
+  - Uses temp files (not in-memory) to match production environment behavior
+  - Each test gets a unique temp DB file with timestamp for complete isolation
+  - Slight performance trade-off for better production parity
 - **Template Tests**: Compile-time validation via Askama + unit tests for data binding
 
 ### Integration Test Patterns
@@ -207,7 +210,24 @@ pub async fn create_test_app() -> Router {
 
 /// Creates app state with a unique temporary database
 pub async fn create_test_app_state() -> AppState {
-    // Creates unique temp DB per test for isolation
+    // Creates unique temp DB file with timestamp to ensure isolation
+    let temp_dir = std::env::temp_dir();
+    let test_db_path = temp_dir
+        .join(format!("test_raugupatis_{}.db", timestamp))
+        .to_string_lossy()
+        .to_string();
+    
+    let config = Arc::new(AppConfig {
+        database_url: test_db_path,
+        environment: "test".to_string(),
+        session_secret: "test-secret".to_string(),
+        // ... other config fields
+    });
+    
+    let db = Arc::new(Database::new(&config.database_url).await.unwrap());
+    db.migrate().await.unwrap();
+    
+    AppState { db, config }
 }
 ```
 
