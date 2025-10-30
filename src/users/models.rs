@@ -87,6 +87,7 @@ pub struct User {
     pub experience_level: ExperienceLevel,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
+    pub is_locked: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

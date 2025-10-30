@@ -75,7 +75,7 @@ pub struct FermentationWithProfile {
 pub struct CreateFermentationRequest {
     pub profile_id: i64,
     pub name: String,
-    pub start_date: String, // ISO 8601 format
+    pub start_date: String,              // ISO 8601 format
     pub target_end_date: Option<String>, // ISO 8601 format
     pub notes: Option<String>,
     pub ingredients: Option<String>,

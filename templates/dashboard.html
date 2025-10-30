@@ -201,6 +201,9 @@
         </div>
         
         <div class="actions">
+            {% if user.role.as_str() == "admin" %}
+            <a href="/admin/users" class="action-button" style="background: rgba(156, 39, 176, 0.3); border-color: rgba(156, 39, 176, 0.6);">👥 User Administration</a>
+            {% endif %}
             <a href="/profile" class="action-button">Edit Profile</a>
             <a href="/fermentation/new" class="action-button">Start New Fermentation</a>
             <a href="/fermentations" class="action-button">View My Fermentations</a>

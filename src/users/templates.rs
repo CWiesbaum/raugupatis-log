@@ -1,11 +1,11 @@
 use askama::Template;
 use axum::{
-    response::{Html, Redirect},
     extract::State,
+    response::{Html, Redirect},
 };
 use tower_sessions::Session;
 
-use crate::users::models::{UserSession, UserResponse};
+use crate::users::models::{UserResponse, UserSession};
 use crate::users::repository::UserRepository;
 use crate::AppState;
 
@@ -19,8 +19,12 @@ pub async fn login_handler() -> Html<String> {
     let template = LoginTemplate {
         title: "Login - Raugupatis Log".to_string(),
     };
-    
-    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+
+    Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    )
 }
 
 #[derive(Template)]
@@ -33,8 +37,12 @@ pub async fn register_handler() -> Html<String> {
     let template = RegisterTemplate {
         title: "Register - Raugupatis Log".to_string(),
     };
-    
-    Html(template.render().unwrap_or_else(|_| "Template render error".to_string()))
+
+    Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    )
 }
 
 #[derive(Template)]
@@ -67,6 +75,10 @@ pub async fn profile_handler(
         title: "Edit Profile - Raugupatis Log".to_string(),
         user: UserResponse::from(user),
     };
-    
-    Ok(Html(template.render().unwrap_or_else(|_| "Template render error".to_string())))
+
+    Ok(Html(
+        template
+            .render()
+            .unwrap_or_else(|_| "Template render error".to_string()),
+    ))
 }

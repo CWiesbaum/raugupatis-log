@@ -13,7 +13,7 @@ pub struct AppConfig {
 impl AppConfig {
     pub fn load() -> Result<Self, Box<dyn std::error::Error + Send + Sync>> {
         let env = env::var("ENVIRONMENT").unwrap_or_else(|_| "development".into());
-        
+
         let s = Config::builder()
             // Start with default configuration
             .add_source(File::with_name("config/default").required(false))

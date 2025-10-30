@@ -8,7 +8,10 @@ use serde_json::json;
 use tower_sessions::Session;
 
 use crate::users::auth::verify_password;
-use crate::users::models::{CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse, UpdateProfileRequest, UserResponse, UserSession};
+use crate::users::models::{
+    CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse, UpdateProfileRequest,
+    UserResponse, UserSession,
+};
 use crate::users::repository::UserRepository;
 use crate::AppState;
 
@@ -83,14 +86,13 @@ pub async fn register_user(
     Ok((StatusCode::CREATED, Json(UserResponse::from(user))))
 }
 
-pub async fn logout_user(
-    session: Session,
-) -> Result<Json<serde_json::Value>, ApiError> {
+pub async fn logout_user(session: Session) -> Result<Json<serde_json::Value>, ApiError> {
     // Clear the session
-    session.flush()
+    session
+        .flush()
         .await
         .map_err(|e| ApiError::InternalError(format!("Failed to clear session: {}", e)))?;
-    
+
     Ok(Json(json!({
         "success": true,
         "message": "Logout successful"
@@ -104,16 +106,16 @@ fn is_valid_email(email: &str) -> bool {
     if parts.len() != 2 {
         return false;
     }
-    
+
     let local = parts[0];
     let domain = parts[1];
-    
+
     // Local part must not be empty and domain must have at least one dot
     // Domain must have characters before and after the dot
     if local.is_empty() || !domain.contains('.') {
         return false;
     }
-    
+
     // Check domain has valid structure (at least "x.x" format)
     let domain_parts: Vec<&str> = domain.split('.').collect();
     domain_parts.len() >= 2 && domain_parts.iter().all(|part| !part.is_empty())
@@ -153,6 +155,15 @@ pub async fn login_user(
         }
     };
 
+    // Check if user is locked
+    if user.is_locked {
+        return Ok(Json(LoginResponse {
+            success: false,
+            user: None,
+            message: "Account is locked. Please contact an administrator.".to_string(),
+        }));
+    }
+
     // Verify password
     match verify_password(&request.password, &user.password_hash) {
         Ok(true) => {
@@ -162,18 +173,19 @@ pub async fn login_user(
                 email: user.email.clone(),
                 role: user.role.clone(),
             };
-            
+
             // Store session data
-            session.insert("user", user_session)
+            session
+                .insert("user", user_session)
                 .await
                 .map_err(|e| ApiError::InternalError(format!("Failed to create session: {}", e)))?;
-            
+
             Ok(Json(LoginResponse {
                 success: true,
                 user: Some(UserResponse::from(user)),
                 message: "Login successful".to_string(),
             }))
-        },
+        }
         Ok(false) => Ok(Json(LoginResponse {
             success: false,
             user: None,
@@ -201,7 +213,8 @@ pub async fn update_profile(
     // Validate experience level
     if !ExperienceLevel::is_valid(&request.experience_level) {
         return Err(ApiError::ValidationError(
-            "Invalid experience level. Must be 'beginner', 'intermediate', or 'advanced'".to_string(),
+            "Invalid experience level. Must be 'beginner', 'intermediate', or 'advanced'"
+                .to_string(),
         ));
     }
 
@@ -210,7 +223,12 @@ pub async fn update_profile(
 
     // Update the user's profile (experience level, first name, and last name)
     let updated_user = user_repo
-        .update_profile(user_session.user_id, experience_level, request.first_name, request.last_name)
+        .update_profile(
+            user_session.user_id,
+            experience_level,
+            request.first_name,
+            request.last_name,
+        )
         .await
         .map_err(|e| ApiError::DatabaseError(format!("Failed to update profile: {}", e)))?;
 
