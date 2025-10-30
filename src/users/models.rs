@@ -49,6 +49,10 @@ impl ExperienceLevel {
             ExperienceLevel::Advanced => "advanced",
         }
     }
+
+    pub fn is_valid(s: &str) -> bool {
+        matches!(s, "beginner" | "intermediate" | "advanced")
+    }
 }
 
 impl std::fmt::Display for ExperienceLevel {

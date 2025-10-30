@@ -199,8 +199,7 @@ pub async fn update_profile(
         .ok_or(ApiError::Unauthorized)?;
 
     // Validate experience level
-    let valid_levels = ["beginner", "intermediate", "advanced"];
-    if !valid_levels.contains(&request.experience_level.as_str()) {
+    if !ExperienceLevel::is_valid(&request.experience_level) {
         return Err(ApiError::ValidationError(
             "Invalid experience level. Must be 'beginner', 'intermediate', or 'advanced'".to_string(),
         ));
