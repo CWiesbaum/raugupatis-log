@@ -70,3 +70,45 @@ pub struct FermentationWithProfile {
     pub fermentation: Fermentation,
     pub profile: FermentationProfile,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct CreateFermentationRequest {
+    pub profile_id: i64,
+    pub name: String,
+    pub start_date: String, // ISO 8601 format
+    pub target_end_date: Option<String>, // ISO 8601 format
+    pub notes: Option<String>,
+    pub ingredients: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FermentationResponse {
+    pub id: i64,
+    pub profile_id: i64,
+    pub profile_name: String,
+    pub name: String,
+    pub start_date: DateTime<Utc>,
+    pub target_end_date: Option<DateTime<Utc>>,
+    pub status: FermentationStatus,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+impl FermentationResponse {
+    pub fn from_fermentation_and_profile(
+        fermentation: Fermentation,
+        profile: FermentationProfile,
+    ) -> Self {
+        Self {
+            id: fermentation.id,
+            profile_id: fermentation.profile_id,
+            profile_name: profile.name,
+            name: fermentation.name,
+            start_date: fermentation.start_date,
+            target_end_date: fermentation.target_end_date,
+            status: fermentation.status,
+            notes: fermentation.notes,
+            created_at: fermentation.created_at,
+        }
+    }
+}

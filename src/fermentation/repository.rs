@@ -1,5 +1,7 @@
 use crate::database::Database;
-use crate::fermentation::models::{Fermentation, FermentationProfile, FermentationStatus};
+use crate::fermentation::models::{
+    CreateFermentationRequest, Fermentation, FermentationProfile, FermentationStatus,
+};
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
 use std::sync::Arc;
@@ -11,6 +13,65 @@ pub struct FermentationRepository {
 impl FermentationRepository {
     pub fn new(db: Arc<Database>) -> Self {
         Self { db }
+    }
+
+    pub async fn create_fermentation(
+        &self,
+        user_id: i64,
+        request: CreateFermentationRequest,
+    ) -> Result<Fermentation, Box<dyn std::error::Error + Send + Sync>> {
+        // Parse dates
+        let start_date = DateTime::parse_from_rfc3339(&request.start_date)
+            .map_err(|e| format!("Invalid start_date format: {}", e))?
+            .with_timezone(&Utc);
+
+        let target_end_date = if let Some(ref date_str) = request.target_end_date {
+            Some(
+                DateTime::parse_from_rfc3339(date_str)
+                    .map_err(|e| format!("Invalid target_end_date format: {}", e))?
+                    .with_timezone(&Utc),
+            )
+        } else {
+            None
+        };
+
+        let db = self.db.clone();
+        let name = request.name.clone();
+        let notes = request.notes.clone();
+        let ingredients_json = request.ingredients.clone();
+        let profile_id = request.profile_id;
+
+        let fermentation_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+            
+            let start_date_str = start_date.format("%Y-%m-%d %H:%M:%S").to_string();
+            let target_end_date_str = target_end_date
+                .map(|d| d.format("%Y-%m-%d %H:%M:%S").to_string());
+            
+            conn.execute(
+                "INSERT INTO fermentations (user_id, profile_id, name, start_date, target_end_date, status, notes, ingredients_json) 
+                 VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+                rusqlite::params![
+                    user_id,
+                    profile_id,
+                    &name,
+                    &start_date_str,
+                    target_end_date_str,
+                    "active",
+                    notes,
+                    ingredients_json,
+                ],
+            )?;
+            
+            let fermentation_id = conn.last_insert_rowid();
+            Ok(fermentation_id)
+        })
+        .await??;
+
+        // Use the find_by_id from main branch which returns Option<Fermentation>
+        self.find_by_id(fermentation_id, user_id)
+            .await?
+            .ok_or_else(|| "Failed to retrieve created fermentation".into())
     }
 
     pub async fn find_all_by_user(
