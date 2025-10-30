@@ -1,71 +1,15 @@
+mod common;
+
 use axum::{
     body::Body,
     http::{Request, StatusCode},
-    Router,
 };
-use raugupatis_log::{config::AppConfig, database::Database, AppState};
 use serde_json::json;
-use std::sync::Arc;
 use tower::ServiceExt;
-
-async fn create_test_app() -> Router {
-    let app_state = create_test_app_state().await;
-    raugupatis_log::create_router(app_state).await
-}
-
-async fn create_test_app_state() -> AppState {
-    // Create a test database with a unique temporary file
-    let temp_dir = std::env::temp_dir();
-    let test_db_path = temp_dir.join(format!("test_raugupatis_{}.db", std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .unwrap()
-        .as_nanos()))
-        .to_string_lossy()
-        .to_string();
-    
-    let config = Arc::new(AppConfig {
-        server_address: "0.0.0.0:3000".to_string(),
-        database_url: test_db_path,
-        environment: "test".to_string(),
-        session_secret: "test-secret".to_string(),
-    });
-
-    let db = Arc::new(Database::new(&config.database_url).await.unwrap());
-    db.migrate().await.unwrap();
-
-    AppState {
-        db,
-        config: config.clone(),
-    }
-}
-
-#[tokio::test]
-async fn test_health_endpoint() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(Request::builder().uri("/health").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-}
-
-#[tokio::test]
-async fn test_home_endpoint() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-}
 
 #[tokio::test]
 async fn test_register_user_success() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let request_body = json!({
         "email": "test@example.com",
@@ -98,7 +42,7 @@ async fn test_register_user_success() {
 #[tokio::test]
 async fn test_register_user_duplicate_email() {
     // Use shared app state for both requests to test duplicate detection
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     let request_body = json!({
         "email": "duplicate@example.com",
@@ -140,7 +84,7 @@ async fn test_register_user_duplicate_email() {
 
 #[tokio::test]
 async fn test_register_user_invalid_email() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let request_body = json!({
         "email": "not-an-email",
@@ -164,7 +108,7 @@ async fn test_register_user_invalid_email() {
 
 #[tokio::test]
 async fn test_register_user_short_password() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let request_body = json!({
         "email": "test@example.com",
@@ -185,9 +129,10 @@ async fn test_register_user_short_password() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
 #[tokio::test]
 async fn test_login_success() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // First register a user
     let register_body = json!({
@@ -243,7 +188,7 @@ async fn test_login_success() {
 
 #[tokio::test]
 async fn test_login_wrong_password() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // First register a user
     let register_body = json!({
@@ -298,7 +243,7 @@ async fn test_login_wrong_password() {
 
 #[tokio::test]
 async fn test_login_nonexistent_user() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let login_body = json!({
         "email": "nonexistent@example.com",
@@ -330,7 +275,7 @@ async fn test_login_nonexistent_user() {
 
 #[tokio::test]
 async fn test_register_page_endpoint() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let response = app
         .oneshot(Request::builder().uri("/register").body(Body::empty()).unwrap())
@@ -342,7 +287,7 @@ async fn test_register_page_endpoint() {
 
 #[tokio::test]
 async fn test_login_invalid_email() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let login_body = json!({
         "email": "not-an-email",
@@ -374,7 +319,7 @@ async fn test_login_invalid_email() {
 
 #[tokio::test]
 async fn test_login_page_loads() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let response = app
         .oneshot(Request::builder().uri("/login").body(Body::empty()).unwrap())
@@ -385,21 +330,8 @@ async fn test_login_page_loads() {
 }
 
 #[tokio::test]
-async fn test_dashboard_page_loads() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(Request::builder().uri("/dashboard").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-
-    // Dashboard should redirect to login when not authenticated
-    assert_eq!(response.status(), StatusCode::SEE_OTHER);
-}
-
-#[tokio::test]
 async fn test_logout() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // First register a user
     let register_body = json!({
@@ -473,66 +405,8 @@ async fn test_logout() {
 }
 
 #[tokio::test]
-async fn test_fermentation_list_page_redirects_when_not_logged_in() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(Request::builder().uri("/fermentations").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-
-    // Should redirect to login when not authenticated
-    assert_eq!(response.status(), StatusCode::SEE_OTHER);
-}
-
-#[tokio::test]
-async fn test_fermentation_list_api_unauthorized() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(Request::builder().uri("/api/fermentations").body(Body::empty()).unwrap())
-        .await
-        .unwrap();
-
-    // API should return 401 when not authenticated
-    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
-}
-
-async fn test_register_user_with_experience_level() {
-    let app = create_test_app().await;
-
-    let request_body = json!({
-        "email": "experienced@example.com",
-        "password": "securepassword123",
-        "experience_level": "advanced"
-    });
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/register")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&request_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    assert_eq!(body_json["email"], "experienced@example.com");
-    assert_eq!(body_json["experience_level"], "advanced");
-}
-
-#[tokio::test]
 async fn test_register_user_default_experience_level() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     // Register without specifying experience level
     let request_body = json!({
@@ -566,7 +440,7 @@ async fn test_register_user_default_experience_level() {
 
 #[tokio::test]
 async fn test_login_returns_experience_level() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // Register with intermediate experience level
     let register_body = json!({
@@ -623,7 +497,7 @@ async fn test_login_returns_experience_level() {
 
 #[tokio::test]
 async fn test_profile_page_redirect_when_not_authenticated() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let response = app
         .oneshot(Request::builder().uri("/profile").body(Body::empty()).unwrap())
@@ -641,7 +515,7 @@ async fn test_profile_page_redirect_when_not_authenticated() {
 
 #[tokio::test]
 async fn test_update_profile_success() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // First register a user
     let register_body = json!({
@@ -723,7 +597,7 @@ async fn test_update_profile_success() {
 
 #[tokio::test]
 async fn test_update_profile_unauthorized() {
-    let app = create_test_app().await;
+    let app = common::create_test_app().await;
 
     let update_body = json!({
         "experience_level": "advanced"
@@ -747,7 +621,7 @@ async fn test_update_profile_unauthorized() {
 
 #[tokio::test]
 async fn test_update_profile_invalid_experience_level() {
-    let app_state = create_test_app_state().await;
+    let app_state = common::create_test_app_state().await;
     
     // Register and login
     let register_body = json!({
@@ -814,316 +688,4 @@ async fn test_update_profile_invalid_experience_level() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-}
-
-#[tokio::test]
-async fn test_get_fermentation_profiles() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/api/fermentation/profiles")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let profiles: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    // Should have the default profiles from migration
-    assert!(!profiles.as_array().unwrap().is_empty());
-}
-
-#[tokio::test]
-async fn test_create_fermentation_success() {
-    let app_state = create_test_app_state().await;
-    
-    // First register and login a user
-    let register_body = json!({
-        "email": "fermenter@example.com",
-        "password": "securepassword123"
-    });
-
-    let app1 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app1
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/register")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    // Login
-    let login_body = json!({
-        "email": "fermenter@example.com",
-        "password": "securepassword123"
-    });
-
-    let app2 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app2
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/login")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-    
-    // Extract session cookie
-    let cookie_header = response
-        .headers()
-        .get("set-cookie")
-        .and_then(|v| v.to_str().ok())
-        .expect("Login should set a session cookie");
-
-    // Create fermentation
-    let fermentation_body = json!({
-        "profile_id": 1,
-        "name": "My First Pickles",
-        "start_date": "2024-01-15T10:00:00Z",
-        "target_end_date": "2024-01-22T10:00:00Z",
-        "notes": "Using grandma's recipe",
-        "ingredients": "cucumbers, salt, water, dill"
-    });
-
-    let app3 = raugupatis_log::create_router(app_state).await;
-    let response = app3
-        .oneshot(
-            Request::builder()
-                .uri("/api/fermentation")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
-        .await
-        .unwrap();
-    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
-
-    assert_eq!(body_json["name"], "My First Pickles");
-    assert_eq!(body_json["profile_id"], 1);
-    assert!(body_json["id"].as_i64().is_some());
-}
-
-#[tokio::test]
-async fn test_create_fermentation_unauthorized() {
-    let app = create_test_app().await;
-
-    let fermentation_body = json!({
-        "profile_id": 1,
-        "name": "My First Pickles",
-        "start_date": "2024-01-15T10:00:00Z",
-    });
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/api/fermentation")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    // Should fail without authentication
-    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
-}
-
-#[tokio::test]
-async fn test_create_fermentation_invalid_profile() {
-    let app_state = create_test_app_state().await;
-    
-    // First register and login a user
-    let register_body = json!({
-        "email": "fermenter2@example.com",
-        "password": "securepassword123"
-    });
-
-    let app1 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app1
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/register")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    // Login
-    let login_body = json!({
-        "email": "fermenter2@example.com",
-        "password": "securepassword123"
-    });
-
-    let app2 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app2
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/login")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-    
-    // Extract session cookie
-    let cookie_header = response
-        .headers()
-        .get("set-cookie")
-        .and_then(|v| v.to_str().ok())
-        .expect("Login should set a session cookie");
-
-    // Try to create fermentation with invalid profile
-    let fermentation_body = json!({
-        "profile_id": 99999,
-        "name": "Invalid Profile Test",
-        "start_date": "2024-01-15T10:00:00Z",
-    });
-
-    let app3 = raugupatis_log::create_router(app_state).await;
-    let response = app3
-        .oneshot(
-            Request::builder()
-                .uri("/api/fermentation")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::NOT_FOUND);
-}
-
-#[tokio::test]
-async fn test_create_fermentation_empty_name() {
-    let app_state = create_test_app_state().await;
-    
-    // First register and login a user
-    let register_body = json!({
-        "email": "fermenter3@example.com",
-        "password": "securepassword123"
-    });
-
-    let app1 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app1
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/register")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::CREATED);
-
-    // Login
-    let login_body = json!({
-        "email": "fermenter3@example.com",
-        "password": "securepassword123"
-    });
-
-    let app2 = raugupatis_log::create_router(app_state.clone()).await;
-    let response = app2
-        .oneshot(
-            Request::builder()
-                .uri("/api/users/login")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::OK);
-    
-    // Extract session cookie
-    let cookie_header = response
-        .headers()
-        .get("set-cookie")
-        .and_then(|v| v.to_str().ok())
-        .expect("Login should set a session cookie");
-
-    // Try to create fermentation with empty name
-    let fermentation_body = json!({
-        "profile_id": 1,
-        "name": "   ",
-        "start_date": "2024-01-15T10:00:00Z",
-    });
-
-    let app3 = raugupatis_log::create_router(app_state).await;
-    let response = app3
-        .oneshot(
-            Request::builder()
-                .uri("/api/fermentation")
-                .method("POST")
-                .header("Content-Type", "application/json")
-                .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-}
-
-#[tokio::test]
-async fn test_new_fermentation_page_requires_auth() {
-    let app = create_test_app().await;
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/fermentation/new")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .unwrap();
-
-    // Should redirect to login when not authenticated
-    assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
