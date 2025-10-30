@@ -36,12 +36,13 @@ impl From<String> for FermentationStatus {
 pub struct FermentationProfile {
     pub id: i64,
     pub name: String,
-    pub type_name: String,
+    pub r#type: String,
     pub min_days: i32,
     pub max_days: i32,
     pub temp_min: f64,
     pub temp_max: f64,
     pub description: Option<String>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -59,6 +60,15 @@ pub struct Fermentation {
     pub ingredients_json: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+    // Joined from profile
+    pub profile_name: Option<String>,
+    pub profile_type: Option<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct FermentationWithProfile {
+    pub fermentation: Fermentation,
+    pub profile: FermentationProfile,
 }
 
 #[derive(Debug, Deserialize)]

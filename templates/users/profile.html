@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .user-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        .info-item {
+            margin-bottom: 1rem;
+            font-size: 1.05rem;
+        }
+        .info-item:last-child {
+            margin-bottom: 0;
+        }
+        .info-item strong {
+            font-weight: 600;
+            display: inline-block;
+            min-width: 120px;
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            font-size: 1rem;
+        }
+        select, input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+        select option {
+            background: #764ba2;
+            color: white;
+        }
+        select:focus, input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.7);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        button {
+            width: 100%;
+            padding: 0.875rem;
+            border: none;
+            border-radius: 8px;
+            background: rgba(76, 175, 80, 0.8);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        button:hover:not(:disabled) {
+            background: rgba(76, 175, 80, 1);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+        }
+        button:disabled {
+            background: rgba(150, 150, 150, 0.5);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+        .message {
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .message.show {
+            display: block;
+        }
+        .message.success {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.6);
+        }
+        .message.error {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.6);
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        .back-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        .experience-description {
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 6px;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .emoji {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">👤</div>
+            <h1>Edit Profile</h1>
+        </div>
+        
+        <div class="user-info">
+            <div class="info-item"><strong>Email:</strong> {{ user.email }}</div>
+            <div class="info-item"><strong>Role:</strong> {{ user.role }}</div>
+            <div class="info-item"><strong>Member Since:</strong> <span id="memberSince"></span></div>
+        </div>
+        
+        <form id="profileForm">
+            <div class="form-group">
+                <label for="experience_level">Fermentation Experience Level</label>
+                <select id="experience_level" name="experience_level" required>
+                    <option value="beginner" {% if user.experience_level == "beginner" %}selected{% endif %}>Beginner - Just starting out</option>
+                    <option value="intermediate" {% if user.experience_level == "intermediate" %}selected{% endif %}>Intermediate - Some experience</option>
+                    <option value="advanced" {% if user.experience_level == "advanced" %}selected{% endif %}>Advanced - Experienced fermenter</option>
+                </select>
+                <div class="experience-description" id="experienceDescription">
+                    Choose the level that best describes your fermentation experience.
+                </div>
+            </div>
+            
+            <button type="submit" id="submitButton">Update Profile</button>
+        </form>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="back-link">
+            <a href="/dashboard">&larr; Back to Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        // Format the member since date
+        const createdAt = "{{ user.created_at }}";
+        const memberSinceElement = document.getElementById('memberSince');
+        try {
+            const date = new Date(createdAt);
+            memberSinceElement.textContent = date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+        } catch (e) {
+            memberSinceElement.textContent = 'Unknown';
+        }
+
+        const form = document.getElementById('profileForm');
+        const experienceSelect = document.getElementById('experience_level');
+        const submitButton = document.getElementById('submitButton');
+        const messageDiv = document.getElementById('message');
+        const descriptionDiv = document.getElementById('experienceDescription');
+
+        const descriptions = {
+            beginner: "Just starting your fermentation journey. Perfect for learning the basics and experimenting with simple recipes.",
+            intermediate: "You've made several successful batches and are comfortable with common fermentation techniques.",
+            advanced: "Experienced fermenter with deep knowledge of the science and art of fermentation."
+        };
+
+        // Update description when selection changes
+        experienceSelect.addEventListener('change', function() {
+            descriptionDiv.textContent = descriptions[this.value] || descriptions.beginner;
+        });
+
+        // Set initial description
+        descriptionDiv.textContent = descriptions[experienceSelect.value] || descriptions.beginner;
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            submitButton.disabled = true;
+            submitButton.textContent = 'Updating...';
+            messageDiv.classList.remove('show', 'success', 'error');
+
+            const profileData = {
+                experience_level: experienceSelect.value
+            };
+
+            try {
+                const response = await fetch('/api/users/profile', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(profileData)
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    messageDiv.textContent = 'Profile updated successfully!';
+                    messageDiv.classList.add('show', 'success');
+                    
+                    // Update session storage if it exists
+                    const userJson = sessionStorage.getItem('user');
+                    if (userJson) {
+                        try {
+                            const user = JSON.parse(userJson);
+                            user.experience_level = data.experience_level;
+                            sessionStorage.setItem('user', JSON.stringify(user));
+                        } catch (err) {
+                            console.error('Error updating session storage:', err);
+                        }
+                    }
+                } else {
+                    const errorData = await response.json();
+                    messageDiv.textContent = errorData.error || 'Failed to update profile';
+                    messageDiv.classList.add('show', 'error');
+                }
+            } catch (error) {
+                messageDiv.textContent = 'An error occurred. Please try again.';
+                messageDiv.classList.add('show', 'error');
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = 'Update Profile';
+            }
+        });
+    </script>
+</body>
+</html>
