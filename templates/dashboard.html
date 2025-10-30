@@ -214,9 +214,9 @@
     </div>
 
     <script>
-        // Update greeting with user email
+        // Update greeting with user first name or email
         const greeting = document.getElementById('greeting');
-        greeting.textContent = `Welcome, {{ user.email }}!`;
+        greeting.textContent = `Welcome, {% match user.first_name %}{% when Some with (first_name) %}{{ first_name }}{% when None %}{{ user.email }}{% endmatch %}!`;
 
         // Handle logout
         const logoutButton = document.getElementById('logoutButton');
