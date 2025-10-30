@@ -1148,7 +1148,7 @@ async fn test_update_profile_preserves_names_when_not_provided() {
     let cookie_value = cookies.unwrap().to_str().unwrap();
 
     // Update profile with only experience level (no names in request)
-    // This simulates the old bug where omitting names would clear them
+    // This tests the API behavior when names are omitted from the request
     let update_body = json!({
         "experience_level": "advanced"
     });
@@ -1174,8 +1174,9 @@ async fn test_update_profile_preserves_names_when_not_provided() {
         .unwrap();
     let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
-    // Names should be cleared when not provided (this is the current API behavior)
-    // The frontend fix ensures names are always sent from the UI
+    // API behavior: names are cleared when not provided in the request
+    // Frontend fix (profile.html): always sends current name values from form fields
+    // This prevents accidental data loss in the UI while keeping API behavior simple
     assert!(body_json["first_name"].is_null());
     assert!(body_json["last_name"].is_null());
     assert_eq!(body_json["experience_level"], "advanced");
