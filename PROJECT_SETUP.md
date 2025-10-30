@@ -135,13 +135,13 @@ raugupatis-log/
 - **Configuration validation** at startup
 
 ### Testing
-- **Unit tests** for authentication (password hashing, email validation)
+- **Unit tests** for authentication (password hashing, email validation) - 3 tests
 - **Integration tests** organized by domain following the application architecture:
   - **tests/common/mod.rs** - Shared test utilities and helper functions
   - **tests/general.rs** - Infrastructure tests (health, home, dashboard endpoints) - 5 tests
   - **tests/users.rs** - User domain tests covering registration, login, logout, profile - 21 tests
   - **tests/fermentation.rs** - Fermentation domain tests covering CRUD operations - 8 tests
-- **34 passing integration tests** covering all main functionality
+- **37 total passing tests** (3 unit tests + 34 integration tests) covering all main functionality
 - **Test database** using temporary SQLite files for isolation
 - **Domain-based test organization** reduces merge conflicts during parallel development
 
