@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: capitalize;
+            margin: 1rem 0;
+        }
+        .status-active {
+            background: rgba(76, 175, 80, 0.4);
+            border: 1px solid rgba(76, 175, 80, 0.8);
+        }
+        .status-paused {
+            background: rgba(255, 152, 0, 0.4);
+            border: 1px solid rgba(255, 152, 0, 0.8);
+        }
+        .status-completed {
+            background: rgba(33, 150, 243, 0.4);
+            border: 1px solid rgba(33, 150, 243, 0.8);
+        }
+        .status-failed {
+            background: rgba(244, 67, 54, 0.4);
+            border: 1px solid rgba(244, 67, 54, 0.8);
+        }
+        .nav-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .detail-section {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.3);
+        }
+        .detail-row {
+            display: flex;
+            margin-bottom: 1rem;
+            align-items: flex-start;
+        }
+        .detail-label {
+            font-weight: 600;
+            min-width: 180px;
+            opacity: 0.9;
+        }
+        .detail-value {
+            flex: 1;
+            font-weight: 400;
+        }
+        .profile-tag {
+            display: inline-block;
+            background: rgba(103, 58, 183, 0.4);
+            border: 1px solid rgba(103, 58, 183, 0.8);
+            padding: 0.5rem 1rem;
+            border-radius: 15px;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+        .notes-content {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            border-left: 4px solid rgba(103, 58, 183, 0.8);
+            font-style: italic;
+            margin-top: 0.5rem;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        .back-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .emoji {
+                font-size: 3rem;
+            }
+            .detail-row {
+                flex-direction: column;
+            }
+            .detail-label {
+                min-width: auto;
+                margin-bottom: 0.25rem;
+            }
+            .nav-actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">🥒</div>
+            <h1>{{ fermentation.name }}</h1>
+            <span class="status-badge status-{{ fermentation.status.as_str() }}">
+                {{ fermentation.status.as_str() }}
+            </span>
+        </div>
+
+        <div class="nav-actions">
+            <a href="/fermentations" class="btn">← Back to List</a>
+            <a href="/dashboard" class="btn">Dashboard</a>
+        </div>
+
+        <!-- Profile Information -->
+        {% match fermentation.profile_name %}
+        {% when Some with (profile_name) %}
+        <div class="detail-section">
+            <h2 class="section-title">📋 Fermentation Profile</h2>
+            <div class="profile-tag">
+                {{ profile_name }}
+                {% match fermentation.profile_type %}
+                {% when Some with (profile_type) %}
+                ({{ profile_type }})
+                {% when None %}{% endmatch %}
+            </div>
+        </div>
+        {% when None %}{% endmatch %}
+
+        <!-- Timeline Information -->
+        <div class="detail-section">
+            <h2 class="section-title">📅 Timeline</h2>
+            <div class="detail-row">
+                <div class="detail-label">Start Date:</div>
+                <div class="detail-value">{{ fermentation.start_date.format("%B %d, %Y at %I:%M %p") }}</div>
+            </div>
+            {% match fermentation.target_end_date %}
+            {% when Some with (target_end) %}
+            <div class="detail-row">
+                <div class="detail-label">Target End Date:</div>
+                <div class="detail-value">{{ target_end.format("%B %d, %Y at %I:%M %p") }}</div>
+            </div>
+            {% when None %}{% endmatch %}
+            {% match fermentation.actual_end_date %}
+            {% when Some with (actual_end) %}
+            <div class="detail-row">
+                <div class="detail-label">Actual End Date:</div>
+                <div class="detail-value">{{ actual_end.format("%B %d, %Y at %I:%M %p") }}</div>
+            </div>
+            {% when None %}{% endmatch %}
+            <div class="detail-row">
+                <div class="detail-label">Created At:</div>
+                <div class="detail-value">{{ fermentation.created_at.format("%B %d, %Y at %I:%M %p") }}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Last Updated:</div>
+                <div class="detail-value">{{ fermentation.updated_at.format("%B %d, %Y at %I:%M %p") }}</div>
+            </div>
+        </div>
+
+        <!-- Success Rating -->
+        {% match fermentation.success_rating %}
+        {% when Some with (rating) %}
+        <div class="detail-section">
+            <h2 class="section-title">⭐ Success Rating</h2>
+            <div class="detail-row">
+                <div class="detail-label">Rating:</div>
+                <div class="detail-value">{{ rating }}/5 ⭐</div>
+            </div>
+        </div>
+        {% when None %}{% endmatch %}
+
+        <!-- Ingredients -->
+        {% match fermentation.ingredients_json %}
+        {% when Some with (ingredients) %}
+            {% if !ingredients.is_empty() %}
+            <div class="detail-section">
+                <h2 class="section-title">🧂 Ingredients</h2>
+                <div class="detail-value">{{ ingredients }}</div>
+            </div>
+            {% endif %}
+        {% when None %}{% endmatch %}
+
+        <!-- Notes -->
+        {% match fermentation.notes %}
+        {% when Some with (notes) %}
+            {% if !notes.is_empty() %}
+            <div class="detail-section">
+                <h2 class="section-title">📝 Notes</h2>
+                <div class="notes-content">
+                    {{ notes }}
+                </div>
+            </div>
+            {% endif %}
+        {% when None %}{% endmatch %}
+
+        <div class="back-link">
+            <a href="/">&larr; Back to Home</a>
+        </div>
+    </div>
+</body>
+</html>

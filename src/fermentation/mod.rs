@@ -10,4 +10,4 @@ pub use models::{
     FermentationStatus,
 };
 pub use repository::FermentationRepository;
-pub use templates::{fermentation_list_handler, new_fermentation_handler};
+pub use templates::{fermentation_detail_handler, fermentation_list_handler, new_fermentation_handler};

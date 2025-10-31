@@ -53,6 +53,10 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/fermentation/new",
             get(crate::fermentation::new_fermentation_handler),
         )
+        .route(
+            "/fermentation/:id",
+            get(crate::fermentation::fermentation_detail_handler),
+        )
         .route("/profile", get(crate::users::profile_handler))
         .route(
             "/profile/change-password",
