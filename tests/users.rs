@@ -1181,3 +1181,360 @@ async fn test_update_profile_preserves_names_when_not_provided() {
     assert!(body_json["last_name"].is_null());
     assert_eq!(body_json["experience_level"], "advanced");
 }
+
+#[tokio::test]
+async fn test_change_password_success() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register a user
+    let register_body = json!({
+        "email": "changepass@example.com",
+        "password": "oldpassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login to get session
+    let login_body = json!({
+        "email": "changepass@example.com",
+        "password": "oldpassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Extract session cookie
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some(), "Login should set a session cookie");
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Change password with session cookie
+    let change_password_body = json!({
+        "current_password": "oldpassword123",
+        "new_password": "newpassword456"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/password")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(
+                    serde_json::to_string(&change_password_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["message"], "Password changed successfully");
+
+    // Verify we can login with new password
+    let login_new_body = json!({
+        "email": "changepass@example.com",
+        "password": "newpassword456"
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_new_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], true);
+    assert_eq!(body_json["user"]["email"], "changepass@example.com");
+
+    // Verify old password no longer works
+    let login_old_body = json!({
+        "email": "changepass@example.com",
+        "password": "oldpassword123"
+    });
+
+    let app5 = raugupatis_log::create_router(app_state).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_old_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["success"], false);
+    assert_eq!(body_json["message"], "Invalid email or password");
+}
+
+#[tokio::test]
+async fn test_change_password_wrong_current_password() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "wrongcurrent@example.com",
+        "password": "correctpassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "wrongcurrent@example.com",
+        "password": "correctpassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Try to change password with wrong current password
+    let change_password_body = json!({
+        "current_password": "wrongpassword123",
+        "new_password": "newpassword456"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/password")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(
+                    serde_json::to_string(&change_password_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["error"], "Current password is incorrect");
+}
+
+#[tokio::test]
+async fn test_change_password_unauthorized() {
+    let app = common::create_test_app().await;
+
+    let change_password_body = json!({
+        "current_password": "oldpassword123",
+        "new_password": "newpassword456"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/password")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(
+                    serde_json::to_string(&change_password_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return unauthorized when no session
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_change_password_too_short() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "shortpass@example.com",
+        "password": "validpassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "shortpass@example.com",
+        "password": "validpassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Try to change password to a too short password
+    let change_password_body = json!({
+        "current_password": "validpassword123",
+        "new_password": "short"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/password")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(
+                    serde_json::to_string(&change_password_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(
+        body_json["error"],
+        "New password must be at least 8 characters long"
+    );
+}
+
+#[tokio::test]
+async fn test_change_password_page_redirect_when_not_authenticated() {
+    let app = common::create_test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/profile/change-password")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Change password page should redirect to login when not authenticated
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    // Verify redirect location
+    let location = response.headers().get("location");
+    assert!(location.is_some());
+    assert_eq!(location.unwrap(), "/login");
+}

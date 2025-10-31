@@ -162,6 +162,26 @@ impl UserRepository {
 
         self.find_by_id(user_id).await
     }
+
+    pub async fn update_password(
+        &self,
+        user_id: i64,
+        new_password_hash: String,
+    ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+
+        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+
+            conn.execute(
+                "UPDATE users SET password_hash = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2",
+                rusqlite::params![&new_password_hash, user_id],
+            )?;
+
+            Ok(())
+        })
+        .await?
+    }
 }
 
 fn parse_datetime(s: String) -> DateTime<Utc> {

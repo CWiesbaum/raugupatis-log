@@ -58,6 +58,10 @@ pub async fn create_router(app_state: AppState) -> Router {
             get(crate::fermentation::fermentation_detail_handler),
         )
         .route("/profile", get(crate::users::profile_handler))
+        .route(
+            "/profile/change-password",
+            get(crate::users::change_password_handler),
+        )
         .route("/admin/users", get(crate::admin::admin_users_list_handler))
         .route("/api/users/register", post(crate::users::register_user))
         .route("/api/users/login", post(crate::users::login_user))
@@ -75,6 +79,7 @@ pub async fn create_router(app_state: AppState) -> Router {
             post(crate::fermentation::create_fermentation),
         )
         .route("/api/users/profile", post(crate::users::update_profile))
+        .route("/api/users/password", post(crate::users::change_password))
         .route("/api/admin/users", get(crate::admin::list_users))
         .route("/api/admin/users", post(crate::admin::create_user))
         .route(

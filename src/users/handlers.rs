@@ -8,10 +8,10 @@ use serde_json::json;
 use time::Duration;
 use tower_sessions::{Expiry, Session};
 
-use crate::users::auth::verify_password;
+use crate::users::auth::{hash_password, verify_password};
 use crate::users::models::{
-    CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse, UpdateProfileRequest,
-    UserResponse, UserSession,
+    ChangePasswordRequest, CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse,
+    UpdateProfileRequest, UserResponse, UserSession,
 };
 use crate::users::repository::UserRepository;
 use crate::AppState;
@@ -243,6 +243,61 @@ pub async fn update_profile(
         .map_err(|e| ApiError::DatabaseError(format!("Failed to update profile: {}", e)))?;
 
     Ok(Json(UserResponse::from(updated_user)))
+}
+
+pub async fn change_password(
+    session: Session,
+    State(state): State<AppState>,
+    Json(request): Json<ChangePasswordRequest>,
+) -> Result<Json<serde_json::Value>, ApiError> {
+    // Check if user is authenticated
+    let user_session: UserSession = session
+        .get("user")
+        .await
+        .map_err(|e| ApiError::InternalError(format!("Failed to get session: {}", e)))?
+        .ok_or(ApiError::Unauthorized)?;
+
+    // Validate new password strength
+    if request.new_password.len() < 8 {
+        return Err(ApiError::ValidationError(
+            "New password must be at least 8 characters long".to_string(),
+        ));
+    }
+
+    let user_repo = UserRepository::new(state.db.clone());
+
+    // Get current user to verify current password
+    let user = user_repo
+        .find_by_id(user_session.user_id)
+        .await
+        .map_err(|e| ApiError::DatabaseError(format!("Failed to find user: {}", e)))?;
+
+    // Verify current password
+    match verify_password(&request.current_password, &user.password_hash) {
+        Ok(true) => {
+            // Hash new password
+            let new_password_hash = hash_password(&request.new_password)
+                .map_err(|e| ApiError::InternalError(format!("Failed to hash password: {}", e)))?;
+
+            // Update password in database
+            user_repo
+                .update_password(user_session.user_id, new_password_hash)
+                .await
+                .map_err(|e| ApiError::DatabaseError(format!("Failed to update password: {}", e)))?;
+
+            Ok(Json(json!({
+                "success": true,
+                "message": "Password changed successfully"
+            })))
+        }
+        Ok(false) => Err(ApiError::ValidationError(
+            "Current password is incorrect".to_string(),
+        )),
+        Err(e) => Err(ApiError::InternalError(format!(
+            "Failed to verify password: {}",
+            e
+        ))),
+    }
 }
 
 #[cfg(test)]
