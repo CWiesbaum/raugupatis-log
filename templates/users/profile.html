@@ -279,13 +279,14 @@
                 experience_level: experienceSelect.value
             };
             
-            // Add optional fields
-            if (firstNameInput.value.trim()) {
-                profileData.first_name = firstNameInput.value.trim();
-            }
-            if (lastNameInput.value.trim()) {
-                profileData.last_name = lastNameInput.value.trim();
-            }
+            // Always send both names to prevent accidental clearing
+            // Input fields are pre-populated with current values
+            // Send trimmed value or null if empty
+            const firstName = firstNameInput.value.trim();
+            const lastName = lastNameInput.value.trim();
+            
+            profileData.first_name = firstName || null;
+            profileData.last_name = lastName || null;
 
             try {
                 const response = await fetch('/api/users/profile', {
