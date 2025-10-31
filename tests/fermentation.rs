@@ -362,3 +362,355 @@ async fn test_new_fermentation_page_requires_auth() {
     // Should redirect to login when not authenticated
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
+
+#[tokio::test]
+async fn test_fermentation_detail_page_redirects_when_not_logged_in() {
+    let app = common::create_test_app().await;
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/fermentation/1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should redirect to login when not authenticated
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn test_fermentation_detail_page_redirects_when_not_found() {
+    let app_state = common::create_test_app_state().await;
+
+    // First register and login a user
+    let register_body = json!({
+        "email": "detailviewer@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "detailviewer@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Extract session cookie
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Try to access a non-existent fermentation
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/fermentation/999999")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should redirect to fermentations list when not found
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
+
+#[tokio::test]
+async fn test_fermentation_detail_page_displays_correctly() {
+    let app_state = common::create_test_app_state().await;
+
+    // First register and login a user
+    let register_body = json!({
+        "email": "detailtest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "detailtest@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Extract session cookie
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create a fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Pickles for Detail View",
+        "start_date": "2024-01-15T10:00:00Z",
+        "target_end_date": "2024-01-22T10:00:00Z",
+        "notes": "Testing the detail view",
+        "ingredients": "cucumbers, salt, water"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Parse response to get fermentation ID
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Now access the detail page
+    let app4 = raugupatis_log::create_router(app_state).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/fermentation/{}", fermentation_id))
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should successfully display the detail page
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Verify the page contains expected content
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let html = String::from_utf8(body.to_vec()).unwrap();
+
+    // Check for key elements in the HTML
+    assert!(html.contains("Test Pickles for Detail View"));
+    assert!(html.contains("Testing the detail view"));
+    assert!(html.contains("cucumbers, salt, water"));
+    assert!(html.contains("Timeline"));
+}
+
+#[tokio::test]
+async fn test_fermentation_detail_cannot_access_other_users_fermentation() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login first user
+    let register_body = json!({
+        "email": "user1@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "user1@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let user1_cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create a fermentation as user1
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "User1 Pickles",
+        "start_date": "2024-01-15T10:00:00Z",
+        "notes": "Private to user1"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", user1_cookie)
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Register and login second user
+    let register_body2 = json!({
+        "email": "user2@example.com",
+        "password": "securepassword123"
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body2).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body2 = json!({
+        "email": "user2@example.com",
+        "password": "securepassword123"
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body2).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let user2_cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Try to access user1's fermentation as user2
+    let app6 = raugupatis_log::create_router(app_state).await;
+    let response = app6
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/fermentation/{}", fermentation_id))
+                .header("Cookie", user2_cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should redirect to fermentations list when trying to access another user's fermentation
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+}
