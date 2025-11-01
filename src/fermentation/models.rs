@@ -82,6 +82,18 @@ pub struct CreateFermentationRequest {
     pub ingredients: Option<String>,
 }
 
+#[derive(Debug, Deserialize)]
+pub struct UpdateFermentationRequest {
+    pub name: Option<String>,
+    pub start_date: Option<String>,       // ISO 8601 format
+    pub target_end_date: Option<String>,  // ISO 8601 format
+    pub actual_end_date: Option<String>,  // ISO 8601 format
+    pub status: Option<String>,
+    pub success_rating: Option<i32>,
+    pub notes: Option<String>,
+    pub ingredients: Option<String>,
+}
+
 #[derive(Debug, Serialize)]
 pub struct FermentationResponse {
     pub id: i64,
