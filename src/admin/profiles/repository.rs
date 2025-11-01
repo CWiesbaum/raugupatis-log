@@ -54,15 +54,16 @@ impl AdminProfileRepository {
     /// Create a new profile
     pub async fn create_profile(
         &self,
-        name: String,
-        r#type: String,
-        min_days: i32,
-        max_days: i32,
-        temp_min: f64,
-        temp_max: f64,
-        description: Option<String>,
+        request: crate::admin::profiles::models::CreateProfileRequest,
     ) -> Result<FermentationProfile, Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.clone();
+        let name = request.name;
+        let r#type = request.r#type;
+        let min_days = request.min_days;
+        let max_days = request.max_days;
+        let temp_min = request.temp_min;
+        let temp_max = request.temp_max;
+        let description = request.description;
 
         let profile_id = tokio::task::spawn_blocking(
             move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {

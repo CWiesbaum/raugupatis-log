@@ -137,15 +137,7 @@ pub async fn create_profile(
 
     // Create profile
     let profile = repo
-        .create_profile(
-            request.name,
-            request.r#type,
-            request.min_days,
-            request.max_days,
-            request.temp_min,
-            request.temp_max,
-            request.description,
-        )
+        .create_profile(request)
         .await
         .map_err(|e| {
             AdminProfileApiError::InternalError(format!("Failed to create profile: {}", e))
