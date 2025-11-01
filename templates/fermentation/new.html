@@ -85,6 +85,22 @@
             resize: vertical;
             min-height: 100px;
         }
+        input[type="file"] {
+            padding: 0.5rem;
+            cursor: pointer;
+        }
+        input[type="file"]::file-selector-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
+        input[type="file"]::file-selector-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
         .help-text {
             font-size: 0.875rem;
             margin-top: 0.25rem;
@@ -271,6 +287,17 @@
                 <div class="help-text">Add any notes about this batch (Optional)</div>
             </div>
             
+            <div class="form-group">
+                <label for="initial_photo">Initial Photo (Optional)</label>
+                <input 
+                    type="file" 
+                    id="initial_photo" 
+                    name="initial_photo" 
+                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                />
+                <div class="help-text">Add a photo to document the start of your fermentation (Max 10MB)</div>
+            </div>
+            
             <div class="button-group">
                 <button type="button" class="btn-secondary" id="cancelButton">Cancel</button>
                 <button type="submit" class="btn-primary" id="submitButton">Save Fermentation</button>
@@ -378,6 +405,30 @@
                 }
                 
                 const result = await response.json();
+                const fermentationId = result.id;
+                
+                // Check if there's an initial photo to upload
+                const photoInput = document.getElementById('initial_photo');
+                if (photoInput.files.length > 0) {
+                    loading.textContent = 'Uploading photo...';
+                    
+                    // Upload the photo
+                    const photoFormData = new FormData();
+                    photoFormData.append('photo', photoInput.files[0]);
+                    photoFormData.append('stage', 'start');
+                    photoFormData.append('caption', 'Initial fermentation setup');
+                    
+                    const photoResponse = await fetch(`/api/fermentation/${fermentationId}/photos`, {
+                        method: 'POST',
+                        body: photoFormData,
+                    });
+                    
+                    if (!photoResponse.ok) {
+                        // Photo upload failed but fermentation was created
+                        console.warn('Photo upload failed, but fermentation was created');
+                    }
+                }
+                
                 showSuccess('Fermentation created successfully! Redirecting to My Fermentations...');
                 
                 // Redirect to fermentations list after a short delay

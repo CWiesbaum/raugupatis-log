@@ -187,6 +187,142 @@
             opacity: 1;
             text-decoration: underline;
         }
+        .photo-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-top: 1rem;
+        }
+        .photo-item {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+        .photo-item:hover {
+            transform: translateY(-5px);
+            border-color: rgba(255, 255, 255, 0.4);
+        }
+        .photo-item img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            display: block;
+        }
+        .photo-caption {
+            padding: 0.75rem;
+            font-size: 0.9rem;
+            font-style: italic;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .photo-meta {
+            padding: 0.75rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .photo-stage {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-weight: 600;
+            text-transform: capitalize;
+            font-size: 0.8rem;
+        }
+        .stage-start {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.6);
+        }
+        .stage-progress {
+            background: rgba(33, 150, 243, 0.3);
+            border: 1px solid rgba(33, 150, 243, 0.6);
+        }
+        .stage-end {
+            background: rgba(156, 39, 176, 0.3);
+            border: 1px solid rgba(156, 39, 176, 0.6);
+        }
+        .photo-date {
+            opacity: 0.8;
+            font-size: 0.8rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .form-group input[type="file"],
+        .form-group input[type="text"],
+        .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group input::file-selector-button {
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-right: 1rem;
+        }
+        .form-group input::file-selector-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .help-text {
+            font-size: 0.85rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        .btn-primary {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 1rem;
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+            transform: translateY(-2px);
+        }
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .upload-message {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        .upload-message.success {
+            display: block;
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.6);
+        }
+        .upload-message.error {
+            display: block;
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid rgba(244, 67, 54, 0.6);
+        }
 
         /* Mobile responsive styles */
         @media (max-width: 768px) {
@@ -215,6 +351,12 @@
             .btn {
                 width: 100%;
                 text-align: center;
+            }
+            .photo-gallery {
+                grid-template-columns: 1fr;
+            }
+            .photo-item img {
+                height: 200px;
             }
         }
     </style>
@@ -334,9 +476,106 @@
             {% endif %}
         {% when None %}{% endmatch %}
 
+        <!-- Photo Gallery -->
+        <div class="detail-section">
+            <h2 class="section-title">📷 Photo Gallery</h2>
+            {% if photos.is_empty() %}
+                <p style="opacity: 0.8;">No photos uploaded yet. Add your first photo below!</p>
+            {% else %}
+                <div class="photo-gallery">
+                    {% for photo in photos %}
+                    <div class="photo-item">
+                        <img src="/uploads/{{ photo.file_path }}" alt="Fermentation photo" loading="lazy">
+                        {% match photo.caption %}
+                        {% when Some with (caption) %}
+                            {% if !caption.is_empty() %}
+                            <div class="photo-caption">{{ caption }}</div>
+                            {% endif %}
+                        {% when None %}{% endmatch %}
+                        <div class="photo-meta">
+                            <span class="photo-stage stage-{{ photo.stage.as_str() }}">{{ photo.stage.as_str() }}</span>
+                            <span class="photo-date">{{ photo.taken_at.format("%B %d, %Y") }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Photo Upload Form -->
+        {% if fermentation.status.as_str() == "active" || fermentation.status.as_str() == "paused" %}
+        <div class="detail-section">
+            <h2 class="section-title">📸 Upload Photo</h2>
+            <div class="upload-message" id="uploadMessage"></div>
+            <form id="photoUploadForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="photo">Select Photo *</label>
+                    <input type="file" id="photo" name="photo" accept="image/jpeg,image/jpg,image/png,image/gif,image/webp" required>
+                    <div class="help-text">Max 10MB. Supported: JPG, PNG, GIF, WebP</div>
+                </div>
+                <div class="form-group">
+                    <label for="caption">Caption (optional)</label>
+                    <input type="text" id="caption" name="caption" placeholder="Describe this photo...">
+                </div>
+                <div class="form-group">
+                    <label for="stage">Stage</label>
+                    <select id="stage" name="stage">
+                        <option value="progress">Progress</option>
+                        <option value="start">Start</option>
+                        <option value="end">End</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn btn-primary" id="uploadButton">Upload Photo</button>
+            </form>
+        </div>
+        {% endif %}
+
         <div class="back-link">
             <a href="/">&larr; Back to Home</a>
         </div>
     </div>
+
+    <script>
+        // Photo upload handler
+        document.getElementById('photoUploadForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const uploadButton = document.getElementById('uploadButton');
+            const messageDiv = document.getElementById('uploadMessage');
+            
+            uploadButton.disabled = true;
+            uploadButton.textContent = 'Uploading...';
+            messageDiv.className = 'upload-message';
+            messageDiv.textContent = '';
+            
+            try {
+                const formData = new FormData(e.target);
+                
+                const response = await fetch('/api/fermentation/{{ fermentation.id }}/photos', {
+                    method: 'POST',
+                    body: formData,
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Upload failed');
+                }
+                
+                messageDiv.className = 'upload-message success';
+                messageDiv.textContent = 'Photo uploaded successfully! Reloading...';
+                
+                // Reload page to show new photo
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Upload error:', error);
+                messageDiv.className = 'upload-message error';
+                messageDiv.textContent = 'Upload failed. Please try again.';
+                uploadButton.disabled = false;
+                uploadButton.textContent = 'Upload Photo';
+            }
+        });
+    </script>
 </body>
 </html>

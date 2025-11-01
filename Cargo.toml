@@ -8,7 +8,7 @@ license = "MIT"
 
 [dependencies]
 # Web framework
-axum = "0.7"
+axum = { version = "0.7", features = ["multipart"] }
 tokio = { version = "1.0", features = ["full"] }
 tower = "0.4"
 tower-http = { version = "0.5", features = ["fs", "compression-gzip", "cors", "trace"] }

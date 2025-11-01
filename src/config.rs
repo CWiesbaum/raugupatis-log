@@ -8,6 +8,7 @@ pub struct AppConfig {
     pub database_url: String,
     pub environment: String,
     pub session_secret: String,
+    pub uploads_dir: String,
 }
 
 impl AppConfig {
@@ -37,6 +38,7 @@ impl Default for AppConfig {
             database_url: "sqlite:data/raugupatis.db".to_string(),
             environment: "development".to_string(),
             session_secret: "your-secret-key-change-in-production".to_string(),
+            uploads_dir: "data/uploads".to_string(),
         }
     }
 }
