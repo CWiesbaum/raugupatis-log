@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin: 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            text-align: center;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.6);
+        }
+        .btn-primary:hover {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+        }
+        .profiles-table {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+        .table-scroll {
+            overflow-x: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 1000px;
+        }
+        thead {
+            background: rgba(0, 0, 0, 0.2);
+        }
+        th {
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        td {
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        tbody tr:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            font-weight: 600;
+        }
+        .status-active {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.6);
+        }
+        .status-inactive {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.6);
+        }
+        .action-buttons {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .btn-small {
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            border-width: 1px;
+        }
+        .btn-warning {
+            background: rgba(255, 152, 0, 0.3);
+            border-color: rgba(255, 152, 0, 0.6);
+        }
+        .btn-warning:hover {
+            background: rgba(255, 152, 0, 0.5);
+            border-color: rgba(255, 152, 0, 0.8);
+        }
+        .btn-danger {
+            background: rgba(244, 67, 54, 0.3);
+            border-color: rgba(244, 67, 54, 0.6);
+        }
+        .btn-danger:hover {
+            background: rgba(244, 67, 54, 0.5);
+            border-color: rgba(244, 67, 54, 0.8);
+        }
+        .btn-success {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.6);
+        }
+        .btn-success:hover {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+        }
+        .btn-info {
+            background: rgba(33, 150, 243, 0.3);
+            border-color: rgba(33, 150, 243, 0.6);
+        }
+        .btn-info:hover {
+            background: rgba(33, 150, 243, 0.5);
+            border-color: rgba(33, 150, 243, 0.8);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 2rem;
+            border-radius: 12px;
+            max-width: 600px;
+            width: 90%;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-header {
+            margin-bottom: 1.5rem;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .form-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem;
+        }
+        .error-message {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.6);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .success-message {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.6);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        .temp-range {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+        
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1rem;
+            }
+            h1 {
+                font-size: 1.5rem;
+            }
+            .header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .header-actions {
+                flex-direction: column;
+            }
+            .btn {
+                width: 100%;
+            }
+            th, td {
+                padding: 0.5rem;
+                font-size: 0.875rem;
+            }
+            .action-buttons {
+                flex-direction: column;
+            }
+            .btn-small {
+                width: 100%;
+            }
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Fermentation Profile Administration</h1>
+            <div class="header-actions">
+                <button class="btn btn-primary" onclick="openCreateModal()">+ Create New Profile</button>
+                <a href="/dashboard" class="btn">← Back to Dashboard</a>
+            </div>
+        </div>
+
+        <div id="messageContainer"></div>
+
+        <div class="profiles-table">
+            <div class="table-scroll">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Duration (days)</th>
+                            <th>Temperature (°F)</th>
+                            <th>Description</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for profile in profiles %}
+                        <tr data-profile-id="{{ profile.id }}">
+                            <td><strong>{{ profile.name }}</strong></td>
+                            <td>{{ profile.type }}</td>
+                            <td>{{ profile.min_days }}-{{ profile.max_days }} days</td>
+                            <td>
+                                <span class="temp-range">{{ profile.temp_min }}°F - {{ profile.temp_max }}°F</span>
+                            </td>
+                            <td>
+                                {% match profile.description %}
+                                    {% when Some with (desc) %}
+                                        {{ desc }}
+                                    {% when None %}
+                                        -
+                                {% endmatch %}
+                            </td>
+                            <td>
+                                {% if profile.is_active %}
+                                    <span class="status-badge status-active">✓ Active</span>
+                                {% else %}
+                                    <span class="status-badge status-inactive">✗ Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ profile.created_at.format("%Y-%m-%d") }}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-small btn-info" onclick="openCopyModal({{ profile.id }}, '{{ profile.name }}')">Copy</button>
+                                    {% if profile.is_active %}
+                                        <button class="btn btn-small btn-danger" onclick="toggleActive({{ profile.id }}, false)">Deactivate</button>
+                                    {% else %}
+                                        <button class="btn btn-small btn-success" onclick="toggleActive({{ profile.id }}, true)">Activate</button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Profile Modal -->
+    <div id="createModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Create New Profile</h2>
+            </div>
+            <form id="createProfileForm" onsubmit="createProfile(event)">
+                <div class="form-group">
+                    <label for="create-name">Profile Name *</label>
+                    <input type="text" id="create-name" required placeholder="e.g., Kimchi">
+                </div>
+                <div class="form-group">
+                    <label for="create-type">Type *</label>
+                    <input type="text" id="create-type" required placeholder="e.g., vegetable, beverage, dairy">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="create-min-days">Min Days *</label>
+                        <input type="number" id="create-min-days" required min="1" placeholder="3">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-max-days">Max Days *</label>
+                        <input type="number" id="create-max-days" required min="1" placeholder="7">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="create-temp-min">Min Temp (°F) *</label>
+                        <input type="number" id="create-temp-min" required step="0.1" placeholder="65.0">
+                    </div>
+                    <div class="form-group">
+                        <label for="create-temp-max">Max Temp (°F) *</label>
+                        <input type="number" id="create-temp-max" required step="0.1" placeholder="75.0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="create-description">Description</label>
+                    <textarea id="create-description" placeholder="Optional description of the fermentation process"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Copy Profile Modal -->
+    <div id="copyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Copy Profile</h2>
+            </div>
+            <form id="copyProfileForm" onsubmit="copyProfile(event)">
+                <input type="hidden" id="copy-profile-id">
+                <div class="form-group">
+                    <label for="copy-original-name">Original Profile</label>
+                    <input type="text" id="copy-original-name" readonly disabled>
+                </div>
+                <div class="form-group">
+                    <label for="copy-new-name">New Profile Name *</label>
+                    <input type="text" id="copy-new-name" required placeholder="e.g., Kimchi Copy">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn" onclick="closeCopyModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Copy Profile</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(message, isError = false) {
+            const container = document.getElementById('messageContainer');
+            const div = document.createElement('div');
+            div.className = isError ? 'error-message' : 'success-message';
+            div.textContent = message;
+            container.appendChild(div);
+            setTimeout(() => div.remove(), 5000);
+        }
+
+        function openCreateModal() {
+            document.getElementById('createModal').classList.add('active');
+        }
+
+        function closeCreateModal() {
+            document.getElementById('createModal').classList.remove('active');
+            document.getElementById('createProfileForm').reset();
+        }
+
+        function openCopyModal(id, name) {
+            document.getElementById('copy-profile-id').value = id;
+            document.getElementById('copy-original-name').value = name;
+            document.getElementById('copy-new-name').value = name + ' Copy';
+            document.getElementById('copyModal').classList.add('active');
+        }
+
+        function closeCopyModal() {
+            document.getElementById('copyModal').classList.remove('active');
+        }
+
+        async function createProfile(event) {
+            event.preventDefault();
+            
+            const data = {
+                name: document.getElementById('create-name').value,
+                type: document.getElementById('create-type').value,
+                min_days: parseInt(document.getElementById('create-min-days').value),
+                max_days: parseInt(document.getElementById('create-max-days').value),
+                temp_min: parseFloat(document.getElementById('create-temp-min').value),
+                temp_max: parseFloat(document.getElementById('create-temp-max').value),
+                description: document.getElementById('create-description').value || null,
+            };
+
+            try {
+                const response = await fetch('/api/admin/profiles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    showMessage('Profile created successfully!');
+                    closeCreateModal();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Failed to create profile', true);
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, true);
+            }
+        }
+
+        async function copyProfile(event) {
+            event.preventDefault();
+            
+            const profileId = document.getElementById('copy-profile-id').value;
+            const data = {
+                new_name: document.getElementById('copy-new-name').value,
+            };
+
+            try {
+                const response = await fetch(`/api/admin/profiles/${profileId}/copy`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data),
+                });
+
+                if (response.ok) {
+                    showMessage('Profile copied successfully!');
+                    closeCopyModal();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || 'Failed to copy profile', true);
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, true);
+            }
+        }
+
+        async function toggleActive(profileId, isActive) {
+            const action = isActive ? 'activate' : 'deactivate';
+            if (!confirm(`Are you sure you want to ${action} this profile?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/admin/profiles/${profileId}/status`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: isActive }),
+                });
+
+                if (response.ok) {
+                    showMessage(`Profile ${action}d successfully!`);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    const error = await response.json();
+                    showMessage(error.error || `Failed to ${action} profile`, true);
+                }
+            } catch (error) {
+                showMessage('Network error: ' + error.message, true);
+            }
+        }
+
+        // Close modals when clicking outside
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.classList.remove('active');
+            }
+        }
+    </script>
+</body>
+</html>
