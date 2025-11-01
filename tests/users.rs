@@ -1543,3 +1543,165 @@ async fn test_change_password_page_redirect_when_not_authenticated() {
     assert!(location.is_some());
     assert_eq!(location.unwrap(), "/login");
 }
+
+#[tokio::test]
+async fn test_update_profile_with_temperature_unit() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register a new user
+    let register_body = json!({
+        "email": "tempunit@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Parse response to verify default temperature unit
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(body_json["preferred_temp_unit"], "fahrenheit"); // Default should be Fahrenheit
+
+    // Login
+    let login_body = json!({
+        "email": "tempunit@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Update profile to use Celsius
+    let update_body = json!({
+        "experience_level": "intermediate",
+        "preferred_temp_unit": "celsius"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let body_json: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(body_json["email"], "tempunit@example.com");
+    assert_eq!(body_json["experience_level"], "intermediate");
+    assert_eq!(body_json["preferred_temp_unit"], "celsius");
+}
+
+#[tokio::test]
+async fn test_update_profile_invalid_temp_unit() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "invalidtemp@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "invalidtemp@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookies = response.headers().get("set-cookie");
+    assert!(cookies.is_some());
+    let cookie_value = cookies.unwrap().to_str().unwrap();
+
+    // Try to update with invalid temperature unit
+    let update_body = json!({
+        "experience_level": "beginner",
+        "preferred_temp_unit": "kelvin"
+    });
+
+    let app3 = raugupatis_log::create_router(app_state).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/profile")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_value)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should return bad request
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
