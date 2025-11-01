@@ -5,8 +5,8 @@ Raugupatis Log is a fermentation tracking application built with Rust, featuring
 
 ### Current Implementation Status
 - **Phase 1 (Complete)**: Basic authentication, user registration/login, database schema, testing infrastructure
-- **Phase 2 (Complete)**: Session management with tower-sessions, protected routes with authentication, fermentation CRUD operations (create, list, get profiles), user profile management
-- **Phase 3 (In Progress)**: Temperature logging with charts, photo uploads, dashboard analytics, view/update/delete fermentation details
+- **Phase 2 (Complete)**: Session management with tower-sessions, protected routes with authentication, fermentation CRUD operations (create, list, get profiles), user profile management, remember me functionality, admin user management, password change, user locking
+- **Phase 3 (In Progress)**: Temperature logging with charts, photo uploads, dashboard analytics, update/delete fermentation details
 
 ## Architecture & Technology Stack
 
@@ -78,7 +78,11 @@ When adding new features:
 - **User logout**: Server-side session destruction with proper cleanup
 - **Protected routes**: Session validation with redirect to login when not authenticated
 - **Database repository pattern**: UserRepository for clean data access layer
-- **API endpoints**: `/api/users/register`, `/api/users/login`, `/api/users/logout`
+- **Remember me functionality**: Extended session duration (5 days vs 1 day default) ✅
+- **Password change**: Authenticated users can change their password with validation ✅
+- **User locking**: Admin capability to lock/unlock user accounts ✅
+- **Admin user management**: Full CRUD operations for managing users (admin-only) ✅
+- **API endpoints**: `/api/users/register`, `/api/users/login`, `/api/users/logout`, `/api/users/password`, `/api/users/profile`, `/api/admin/users`, `/api/admin/users/:id`, `/api/admin/users/:id/lock`
 
 ### Authentication Flow Implementation
 ```rust
@@ -105,9 +109,11 @@ struct UserSession {
 ### Authorization Patterns
 - Protected routes check for valid session using `Session` extractor ✅
 - Dashboard redirects to login when session is missing ✅
-- Session expiry: 24h inactivity timeout ✅
-- Role-based access with custom extractors (admin vs. user) - To implement
-- Extended session duration for "remember me" - To implement
+- Session expiry: 24h inactivity timeout (default) or 5 days (with remember me) ✅
+- Role-based access with custom extractors (admin vs. user) ✅
+- Extended session duration for "remember me" ✅
+- Admin-only routes with `require_admin` helper function ✅
+- User locking prevents login for locked accounts ✅
 
 ### Fermentation Tracking
 - **Flexible timing**: Support both date ranges (min-max days) and exact durations
