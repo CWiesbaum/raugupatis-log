@@ -134,6 +134,45 @@
             font-style: italic;
             margin-top: 0.5rem;
         }
+        .countdown-section {
+            background: rgba(103, 58, 183, 0.3);
+            border: 2px solid rgba(103, 58, 183, 0.7);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .countdown-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        .countdown-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+        .countdown-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .schedule-finished-section {
+            background: rgba(255, 152, 0, 0.3);
+            border: 2px solid rgba(255, 152, 0, 0.7);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+        }
+        .schedule-finished-icon {
+            font-size: 3rem;
+            margin-bottom: 0.5rem;
+        }
+        .schedule-finished-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
         .back-link {
             text-align: center;
             margin-top: 2rem;
@@ -209,6 +248,23 @@
             </div>
         </div>
         {% when None %}{% endmatch %}
+
+        <!-- Countdown Timer -->
+        {% if fermentation.should_show_countdown() %}
+            {% match fermentation.countdown_display() %}
+            {% when Some with (countdown) %}
+            <div class="countdown-section">
+                <div class="countdown-icon">⏱️</div>
+                <div class="countdown-title">Time Remaining</div>
+                <div class="countdown-value">{{ countdown }}</div>
+            </div>
+            {% when None %}{% endmatch %}
+        {% else if fermentation.is_schedule_finished() %}
+        <div class="schedule-finished-section">
+            <div class="schedule-finished-icon">✅</div>
+            <div class="schedule-finished-text">Finished fermentation schedule</div>
+        </div>
+        {% endif %}
 
         <!-- Timeline Information -->
         <div class="detail-section">
