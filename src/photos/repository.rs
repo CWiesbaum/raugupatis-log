@@ -138,7 +138,23 @@ impl PhotoRepository {
             move || -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
                 let conn = db.get_connection().lock().unwrap();
 
+                // Helper function to query photo by stage
+                let query_photo_by_stage = |stage: &str| -> rusqlite::Result<Option<String>> {
+                    let mut stmt = conn.prepare(
+                        "SELECT file_path FROM fermentation_photos 
+                         WHERE fermentation_id = ?1 AND stage = ?2
+                         ORDER BY taken_at ASC, created_at ASC
+                         LIMIT 1",
+                    )?;
+
+                    stmt.query_row([fermentation_id.to_string(), stage.to_string()], |row| {
+                        row.get::<_, String>(0)
+                    })
+                    .optional()
+                };
+
                 // Determine which stage to prioritize based on fermentation status
+                // Using string literals that match FermentationStatus::as_str() values
                 let (primary_stage, fallback_stage) = if status == "completed" || status == "failed" {
                     // For finished fermentations, prefer "end" stage, fallback to "start"
                     ("end", Some("start"))
@@ -148,40 +164,15 @@ impl PhotoRepository {
                 };
 
                 // Try to get the primary stage photo first
-                let mut stmt = conn.prepare(
-                    "SELECT file_path FROM fermentation_photos 
-                     WHERE fermentation_id = ?1 AND stage = ?2
-                     ORDER BY taken_at ASC, created_at ASC
-                     LIMIT 1",
-                )?;
-
-                let photo = stmt
-                    .query_row([fermentation_id.to_string(), primary_stage.to_string()], |row| {
-                        row.get::<_, String>(0)
-                    })
-                    .optional()?;
-
-                // If primary stage photo exists, return it
-                if photo.is_some() {
-                    return Ok(photo);
+                if let Some(photo) = query_photo_by_stage(primary_stage)? {
+                    return Ok(Some(photo));
                 }
 
                 // Try fallback stage if specified
                 if let Some(fallback) = fallback_stage {
-                    let mut stmt_fallback = conn.prepare(
-                        "SELECT file_path FROM fermentation_photos 
-                         WHERE fermentation_id = ?1 AND stage = ?2
-                         ORDER BY taken_at ASC, created_at ASC
-                         LIMIT 1",
-                    )?;
-
-                    let fallback_photo = stmt_fallback
-                        .query_row([fermentation_id.to_string(), fallback.to_string()], |row| {
-                            row.get::<_, String>(0)
-                        })
-                        .optional()?;
-
-                    return Ok(fallback_photo);
+                    if let Some(photo) = query_photo_by_stage(fallback)? {
+                        return Ok(Some(photo));
+                    }
                 }
 
                 Ok(None)
