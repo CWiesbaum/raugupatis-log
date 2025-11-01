@@ -63,6 +63,10 @@ pub async fn create_router(app_state: AppState) -> Router {
             get(crate::users::change_password_handler),
         )
         .route("/admin/users", get(crate::admin::admin_users_list_handler))
+        .route(
+            "/admin/profiles",
+            get(crate::admin::admin_profiles_list_handler),
+        )
         .route("/api/users/register", post(crate::users::register_user))
         .route("/api/users/login", post(crate::users::login_user))
         .route("/api/users/logout", post(crate::users::logout_user))
@@ -90,6 +94,19 @@ pub async fn create_router(app_state: AppState) -> Router {
         .route(
             "/api/admin/users/:id",
             axum::routing::delete(crate::admin::delete_user),
+        )
+        .route(
+            "/api/admin/profiles",
+            get(crate::admin::list_all_profiles),
+        )
+        .route("/api/admin/profiles", post(crate::admin::create_profile))
+        .route(
+            "/api/admin/profiles/:id/copy",
+            post(crate::admin::copy_profile),
+        )
+        .route(
+            "/api/admin/profiles/:id/status",
+            post(crate::admin::set_profile_active_status),
         )
         .with_state(app_state)
         .layer(
