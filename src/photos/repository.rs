@@ -122,6 +122,73 @@ impl PhotoRepository {
         )
         .await?
     }
+
+    /// Get the thumbnail photo for a fermentation based on its status
+    /// For active/paused fermentations: returns first "start" stage photo
+    /// For completed/failed fermentations: returns first "end" stage photo, falling back to first "start" stage photo
+    pub async fn get_thumbnail_for_fermentation(
+        &self,
+        fermentation_id: i64,
+        fermentation_status: &str,
+    ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+        let status = fermentation_status.to_string();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                // Determine which stage to prioritize based on fermentation status
+                let (primary_stage, fallback_stage) = if status == "completed" || status == "failed" {
+                    // For finished fermentations, prefer "end" stage, fallback to "start"
+                    ("end", Some("start"))
+                } else {
+                    // For active/paused fermentations, only look for "start" stage
+                    ("start", None)
+                };
+
+                // Try to get the primary stage photo first
+                let mut stmt = conn.prepare(
+                    "SELECT file_path FROM fermentation_photos 
+                     WHERE fermentation_id = ?1 AND stage = ?2
+                     ORDER BY taken_at ASC, created_at ASC
+                     LIMIT 1",
+                )?;
+
+                let photo = stmt
+                    .query_row([fermentation_id.to_string(), primary_stage.to_string()], |row| {
+                        row.get::<_, String>(0)
+                    })
+                    .optional()?;
+
+                // If primary stage photo exists, return it
+                if photo.is_some() {
+                    return Ok(photo);
+                }
+
+                // Try fallback stage if specified
+                if let Some(fallback) = fallback_stage {
+                    let mut stmt_fallback = conn.prepare(
+                        "SELECT file_path FROM fermentation_photos 
+                         WHERE fermentation_id = ?1 AND stage = ?2
+                         ORDER BY taken_at ASC, created_at ASC
+                         LIMIT 1",
+                    )?;
+
+                    let fallback_photo = stmt_fallback
+                        .query_row([fermentation_id.to_string(), fallback.to_string()], |row| {
+                            row.get::<_, String>(0)
+                        })
+                        .optional()?;
+
+                    return Ok(fallback_photo);
+                }
+
+                Ok(None)
+            },
+        )
+        .await?
+    }
 }
 
 fn parse_datetime(s: String) -> DateTime<Utc> {

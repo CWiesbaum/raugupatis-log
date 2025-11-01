@@ -25,14 +25,26 @@ pub async fn fermentation_list_handler(
 
     if let Some(user) = user_session {
         let repo = FermentationRepository::new(state.db.clone());
+        let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
 
-        let fermentations = repo
+        let mut fermentations = repo
             .find_all_by_user(user.user_id)
             .await
             .unwrap_or_else(|e| {
                 tracing::error!("Error fetching fermentations: {}", e);
                 Vec::new()
             });
+
+        // Populate thumbnail_path for each fermentation
+        for fermentation in &mut fermentations {
+            fermentation.thumbnail_path = photo_repo
+                .get_thumbnail_for_fermentation(fermentation.id, fermentation.status.as_str())
+                .await
+                .unwrap_or_else(|e| {
+                    tracing::error!("Error fetching thumbnail for fermentation {}: {}", fermentation.id, e);
+                    None
+                });
+        }
 
         let template = FermentationListTemplate {
             title: "My Fermentations - Raugupatis Log".to_string(),

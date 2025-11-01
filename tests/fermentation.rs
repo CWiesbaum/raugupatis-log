@@ -1482,3 +1482,253 @@ async fn test_edit_fermentation_page_redirects_when_not_found() {
     // Should redirect to fermentations list when not found
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
 }
+
+#[tokio::test]
+async fn test_fermentation_list_includes_thumbnails() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "thumbnails@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "thumbnails@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create an active fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Active Fermentation with Photos",
+        "start_date": "2024-01-15T10:00:00Z",
+        "target_end_date": "2024-01-25T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Add a "start" stage photo
+    use raugupatis_log::photos::{PhotoRepository, PhotoStage};
+    use chrono::Utc;
+    
+    let photo_repo = PhotoRepository::new(app_state.db.clone());
+    let _photo = photo_repo
+        .create_photo(
+            fermentation_id,
+            "/uploads/test_start.jpg".to_string(),
+            Some("Start photo".to_string()),
+            Utc::now(),
+            PhotoStage::Start,
+        )
+        .await
+        .unwrap();
+
+    // Add a "progress" stage photo (should not be used as thumbnail)
+    let _photo2 = photo_repo
+        .create_photo(
+            fermentation_id,
+            "/uploads/test_progress.jpg".to_string(),
+            Some("Progress photo".to_string()),
+            Utc::now(),
+            PhotoStage::Progress,
+        )
+        .await
+        .unwrap();
+
+    // Fetch fermentations via API
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should have the fermentation with thumbnail_path
+    assert_eq!(fermentations.len(), 1);
+    let ferm = &fermentations[0];
+    assert_eq!(ferm["thumbnail_path"], "/uploads/test_start.jpg");
+
+    // Now create a completed fermentation
+    let fermentation_body2 = json!({
+        "profile_id": 1,
+        "name": "Completed Fermentation with Photos",
+        "start_date": "2024-01-01T10:00:00Z",
+        "target_end_date": "2024-01-10T10:00:00Z",
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body2).unwrap(),
+                ))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation2: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id2 = fermentation2["id"].as_i64().unwrap();
+
+    // Add "start" and "end" photos to completed fermentation
+    let _photo3 = photo_repo
+        .create_photo(
+            fermentation_id2,
+            "/uploads/test_completed_start.jpg".to_string(),
+            Some("Completed start photo".to_string()),
+            Utc::now(),
+            PhotoStage::Start,
+        )
+        .await
+        .unwrap();
+
+    let _photo4 = photo_repo
+        .create_photo(
+            fermentation_id2,
+            "/uploads/test_completed_end.jpg".to_string(),
+            Some("Completed end photo".to_string()),
+            Utc::now(),
+            PhotoStage::End,
+        )
+        .await
+        .unwrap();
+
+    // Mark as completed
+    let update_body = json!({
+        "status": "completed",
+        "actual_end_date": "2024-01-10T10:00:00Z",
+    });
+
+    let app6 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app6
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}", fermentation_id2))
+                .method("PUT")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Fetch fermentations again
+    let app7 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app7
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should have 2 fermentations
+    assert_eq!(fermentations.len(), 2);
+
+    // Find the completed fermentation (should be first due to created_at DESC order)
+    let completed_ferm = fermentations
+        .iter()
+        .find(|f| f["status"] == "completed")
+        .expect("Should have a completed fermentation");
+
+    // Completed fermentation should use "end" photo as thumbnail
+    assert_eq!(
+        completed_ferm["thumbnail_path"],
+        "/uploads/test_completed_end.jpg"
+    );
+}
