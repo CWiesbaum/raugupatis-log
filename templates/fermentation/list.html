@@ -183,6 +183,30 @@
             font-style: italic;
             opacity: 0.9;
         }
+        .countdown-display {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(103, 58, 183, 0.3);
+            border: 2px solid rgba(103, 58, 183, 0.7);
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+        .countdown-display .countdown-icon {
+            font-size: 1.3rem;
+            margin-right: 0.5rem;
+        }
+        .schedule-finished {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            background: rgba(255, 152, 0, 0.3);
+            border: 2px solid rgba(255, 152, 0, 0.7);
+            border-radius: 10px;
+            text-align: center;
+            font-weight: 600;
+            font-size: 1rem;
+        }
         .back-link {
             text-align: center;
             margin-top: 2rem;
@@ -298,6 +322,19 @@
                         <strong>Rating:</strong> {{ rating }}/5 ⭐
                     </div>
                     {% when None %}{% endmatch %}
+
+                    {% if fermentation.should_show_countdown() %}
+                        {% match fermentation.countdown_display() %}
+                        {% when Some with (countdown) %}
+                        <div class="countdown-display">
+                            <span class="countdown-icon">⏱️</span>{{ countdown }} remaining
+                        </div>
+                        {% when None %}{% endmatch %}
+                    {% else if fermentation.is_schedule_finished() %}
+                    <div class="schedule-finished">
+                        ✅ Finished fermentation schedule
+                    </div>
+                    {% endif %}
 
                     {% match fermentation.notes %}
                     {% when Some with (notes) %}
