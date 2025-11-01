@@ -101,9 +101,11 @@ pub async fn upload_photo(
     let fermentation_dir = format!("{}/{}", uploads_dir, fermentation.id);
     fs::create_dir_all(&fermentation_dir).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
-    // Generate unique filename
-    let timestamp = Utc::now().timestamp();
-    let unique_filename = format!("{}_{}.{}", timestamp, uuid::Uuid::new_v4(), extension);
+    // Generate unique filename using timestamp and nanoseconds
+    let now = Utc::now();
+    let timestamp = now.timestamp();
+    let nanos = now.timestamp_subsec_nanos();
+    let unique_filename = format!("{}_{:x}.{}", timestamp, nanos, extension);
     let file_path = format!("{}/{}", fermentation_dir, unique_filename);
 
     // Write file to disk
@@ -184,20 +186,4 @@ fn sanitize_filename(filename: String) -> String {
             }
         })
         .collect()
-}
-
-// Need uuid crate for unique filenames
-mod uuid {
-    pub struct Uuid;
-    
-    impl Uuid {
-        pub fn new_v4() -> String {
-            use std::time::{SystemTime, UNIX_EPOCH};
-            let timestamp = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_nanos();
-            format!("{:x}", timestamp)
-        }
-    }
 }
