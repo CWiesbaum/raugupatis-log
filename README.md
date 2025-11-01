@@ -12,9 +12,12 @@ Raugupatis Log is under active development. The core foundation and authenticati
 
 ### User Management
 - **User registration**: New users can create accounts with secure Argon2 password hashing and email validation. Registration includes basic profile setup with fermentation experience level.
-- **User login**: Secure authentication system with server-side session management using tower-sessions with SQLite persistence. Sessions expire after 24 hours of inactivity with HttpOnly cookies.
+- **User login**: Secure authentication system with server-side session management using tower-sessions with SQLite persistence. Sessions expire after 24 hours of inactivity (or 5 days with "remember me") using HttpOnly cookies.
+- **"Remember me" functionality**: Extended session duration (5 days) for convenient access when the "remember me" checkbox is selected during login.
 - **User logout**: Clean session termination with server-side session destruction. Client-side session storage is cleared to ensure complete logout.
 - **Protected routes**: Dashboard and authenticated pages validate server-side sessions and redirect to login when not authenticated.
+- **Password change**: Authenticated users can change their password through a dedicated interface with current password verification and strength validation.
+- **User locking**: Admin capability to lock/unlock user accounts, preventing locked users from logging in.
 
 ### Database & Infrastructure
 - **Complete database schema**: All tables designed and created (users, fermentation_profiles, fermentations, temperature_logs, fermentation_photos)
@@ -32,6 +35,15 @@ Raugupatis Log is under active development. The core foundation and authenticati
 - **Update profile**: Edit first name, last name, and experience level through dedicated API endpoint
 - **Profile validation**: Server-side validation ensures data integrity when updating profile information
 
+### Admin User Management
+- **Role-based access control**: Admin users have elevated privileges with role-based authorization checks
+- **User administration interface**: Dedicated admin panel at `/admin/users` for managing all users in the system
+- **List all users**: Admin-only endpoint to view all registered users with their roles, experience levels, and lock status
+- **Create users as admin**: Administrators can create new user accounts with specified roles (admin or user) and initial profile settings
+- **Update user details**: Admin capability to modify user email, role, experience level, and names
+- **Lock/unlock accounts**: Administrators can lock user accounts to prevent login, with protection against self-locking
+- **Delete users**: Admin-only user deletion with safeguards to prevent self-deletion
+
 ### Fermentation Logging
 - **Create new fermentation**: Start tracking a new batch with metadata including profile selection, name, start date, target end date, notes, and ingredients. Full validation ensures data integrity.
 - **List fermentations**: View all fermentations for the authenticated user through both web interface (/fermentations) and API endpoint (/api/fermentations)
@@ -40,10 +52,6 @@ Raugupatis Log is under active development. The core foundation and authenticati
 - **Protected fermentation routes**: All fermentation pages and API endpoints require authentication, redirecting to login when session is missing
 
 ## 🚧 Planned Features (Phase 3)
-
-### User Management
-- **"Remember me" functionality**: Extended session duration (30 days) for convenient access
-- **User Administration**: Administrative interface for managing users, viewing system statistics, and maintaining fermentation profile templates
 
 ### Fermentation Tracking - Advanced Features
 - **View fermentation details**: Display individual fermentation with complete history, notes, and status tracking
