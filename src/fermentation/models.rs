@@ -64,6 +64,8 @@ pub struct Fermentation {
     // Joined from profile
     pub profile_name: Option<String>,
     pub profile_type: Option<String>,
+    // Thumbnail photo path for list view
+    pub thumbnail_path: Option<String>,
 }
 
 impl Fermentation {
@@ -233,6 +235,7 @@ mod tests {
             updated_at: now,
             profile_name: Some("Test Profile".to_string()),
             profile_type: Some("test".to_string()),
+            thumbnail_path: None,
         }
     }
 

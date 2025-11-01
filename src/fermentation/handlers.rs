@@ -19,9 +19,22 @@ pub async fn list_fermentations(
     let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
 
     let repo = FermentationRepository::new(state.db.clone());
+    let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
 
     match repo.find_all_by_user(user.user_id).await {
-        Ok(fermentations) => Ok(Json(fermentations)),
+        Ok(mut fermentations) => {
+            // Populate thumbnail_path for each fermentation
+            for fermentation in &mut fermentations {
+                fermentation.thumbnail_path = photo_repo
+                    .get_thumbnail_for_fermentation(fermentation.id, fermentation.status.as_str())
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::error!("Error fetching thumbnail for fermentation {}: {}", fermentation.id, e);
+                        None
+                    });
+            }
+            Ok(Json(fermentations))
+        }
         Err(e) => {
             tracing::error!("Error fetching fermentations: {}", e);
             Err(StatusCode::INTERNAL_SERVER_ERROR)

@@ -122,6 +122,64 @@ impl PhotoRepository {
         )
         .await?
     }
+
+    /// Get the thumbnail photo for a fermentation based on its status
+    /// For active/paused fermentations: returns first "start" stage photo
+    /// For completed/failed fermentations: returns first "end" stage photo, falling back to first "start" stage photo
+    pub async fn get_thumbnail_for_fermentation(
+        &self,
+        fermentation_id: i64,
+        fermentation_status: &str,
+    ) -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+        let status = fermentation_status.to_string();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Option<String>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                // Helper function to query photo by stage
+                let query_photo_by_stage = |stage: &str| -> rusqlite::Result<Option<String>> {
+                    let mut stmt = conn.prepare(
+                        "SELECT file_path FROM fermentation_photos 
+                         WHERE fermentation_id = ?1 AND stage = ?2
+                         ORDER BY taken_at ASC, created_at ASC
+                         LIMIT 1",
+                    )?;
+
+                    stmt.query_row([fermentation_id.to_string(), stage.to_string()], |row| {
+                        row.get::<_, String>(0)
+                    })
+                    .optional()
+                };
+
+                // Determine which stage to prioritize based on fermentation status
+                // Using string literals that match FermentationStatus::as_str() values
+                let (primary_stage, fallback_stage) = if status == "completed" || status == "failed" {
+                    // For finished fermentations, prefer "end" stage, fallback to "start"
+                    ("end", Some("start"))
+                } else {
+                    // For active/paused fermentations, only look for "start" stage
+                    ("start", None)
+                };
+
+                // Try to get the primary stage photo first
+                if let Some(photo) = query_photo_by_stage(primary_stage)? {
+                    return Ok(Some(photo));
+                }
+
+                // Try fallback stage if specified
+                if let Some(fallback) = fallback_stage {
+                    if let Some(photo) = query_photo_by_stage(fallback)? {
+                        return Ok(Some(photo));
+                    }
+                }
+
+                Ok(None)
+            },
+        )
+        .await?
+    }
 }
 
 fn parse_datetime(s: String) -> DateTime<Utc> {

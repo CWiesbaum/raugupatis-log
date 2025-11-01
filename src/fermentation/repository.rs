@@ -113,6 +113,7 @@ impl FermentationRepository {
                             updated_at: parse_datetime(row.get::<_, String>(12)?),
                             profile_name: row.get(13)?,
                             profile_type: row.get(14)?,
+                            thumbnail_path: None,
                         })
                     })?
                     .collect::<Result<Vec<_>, _>>()?;
@@ -161,6 +162,7 @@ impl FermentationRepository {
                             updated_at: parse_datetime(row.get::<_, String>(12)?),
                             profile_name: row.get(13)?,
                             profile_type: row.get(14)?,
+                            thumbnail_path: None,
                         })
                     })
                     .optional()?;
