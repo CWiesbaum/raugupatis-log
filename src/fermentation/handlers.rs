@@ -1,7 +1,7 @@
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::{Path, State}, http::StatusCode, Json};
 use tower_sessions::Session;
 
-use crate::fermentation::models::{CreateFermentationRequest, Fermentation, FermentationResponse};
+use crate::fermentation::models::{CreateFermentationRequest, Fermentation, FermentationResponse, UpdateFermentationRequest};
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
 use crate::AppState;
@@ -97,4 +97,83 @@ pub async fn get_profiles(
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     Ok(Json(profiles))
+}
+
+pub async fn update_fermentation(
+    session: Session,
+    State(state): State<AppState>,
+    Path(id): Path<i64>,
+    Json(request): Json<UpdateFermentationRequest>,
+) -> Result<Json<FermentationResponse>, StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate request fields
+    if let Some(ref name) = request.name {
+        if name.trim().is_empty() || name.len() > 255 {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    // Validate date formats
+    if let Some(ref start_date) = request.start_date {
+        if chrono::DateTime::parse_from_rfc3339(start_date).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    if let Some(ref target_date) = request.target_end_date {
+        if !target_date.is_empty() && chrono::DateTime::parse_from_rfc3339(target_date).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    if let Some(ref actual_date) = request.actual_end_date {
+        if !actual_date.is_empty() && chrono::DateTime::parse_from_rfc3339(actual_date).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    // Validate status
+    if let Some(ref status) = request.status {
+        if !matches!(status.as_str(), "active" | "paused" | "completed" | "failed") {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    // Validate success rating
+    if let Some(rating) = request.success_rating {
+        if !(1..=5).contains(&rating) {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    // Update the fermentation
+    let fermentation = fermentation_repo
+        .update_fermentation(id, user.user_id, request)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error updating fermentation: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    // Get the profile for the response
+    let profile = fermentation_repo
+        .get_profile_by_id(fermentation.profile_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(FermentationResponse::from_fermentation_and_profile(
+        fermentation,
+        profile,
+    )))
 }

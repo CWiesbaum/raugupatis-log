@@ -1,6 +1,7 @@
 use crate::database::Database;
 use crate::fermentation::models::{
     CreateFermentationRequest, Fermentation, FermentationProfile, FermentationStatus,
+    UpdateFermentationRequest,
 };
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
@@ -233,6 +234,149 @@ impl FermentationRepository {
             Ok(profiles)
         })
         .await?
+    }
+
+    pub async fn update_fermentation(
+        &self,
+        id: i64,
+        user_id: i64,
+        request: UpdateFermentationRequest,
+    ) -> Result<Option<Fermentation>, Box<dyn std::error::Error + Send + Sync>> {
+        // First verify the fermentation exists and belongs to the user
+        if self.find_by_id(id, user_id).await?.is_none() {
+            return Ok(None);
+        }
+
+        // Parse dates if provided
+        let start_date = if let Some(ref date_str) = request.start_date {
+            Some(
+                DateTime::parse_from_rfc3339(date_str)
+                    .map_err(|e| format!("Invalid start_date format: {}", e))?
+                    .with_timezone(&Utc),
+            )
+        } else {
+            None
+        };
+
+        let target_end_date = if let Some(ref date_str) = request.target_end_date {
+            Some(
+                DateTime::parse_from_rfc3339(date_str)
+                    .map_err(|e| format!("Invalid target_end_date format: {}", e))?
+                    .with_timezone(&Utc),
+            )
+        } else {
+            None
+        };
+
+        let actual_end_date = if let Some(ref date_str) = request.actual_end_date {
+            Some(
+                DateTime::parse_from_rfc3339(date_str)
+                    .map_err(|e| format!("Invalid actual_end_date format: {}", e))?
+                    .with_timezone(&Utc),
+            )
+        } else {
+            None
+        };
+
+        let db = self.db.clone();
+        let name = request.name.clone();
+        let status = request.status.clone();
+        let success_rating = request.success_rating;
+        let notes = request.notes.clone();
+        let ingredients_json = request.ingredients.clone();
+
+        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+
+            // Build dynamic UPDATE query based on provided fields
+            let mut updates = Vec::new();
+            let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+
+            if let Some(n) = name {
+                updates.push("name = ?");
+                params.push(Box::new(n));
+            }
+
+            if let Some(d) = start_date {
+                updates.push("start_date = ?");
+                params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
+            }
+
+            if request.target_end_date.is_some() {
+                if let Some(d) = target_end_date {
+                    updates.push("target_end_date = ?");
+                    params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
+                } else {
+                    updates.push("target_end_date = NULL");
+                }
+            }
+
+            if request.actual_end_date.is_some() {
+                if let Some(d) = actual_end_date {
+                    updates.push("actual_end_date = ?");
+                    params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
+                } else {
+                    updates.push("actual_end_date = NULL");
+                }
+            }
+
+            if let Some(s) = status {
+                updates.push("status = ?");
+                params.push(Box::new(s));
+            }
+
+            if request.success_rating.is_some() {
+                if let Some(r) = success_rating {
+                    updates.push("success_rating = ?");
+                    params.push(Box::new(r));
+                } else {
+                    updates.push("success_rating = NULL");
+                }
+            }
+
+            if request.notes.is_some() {
+                if let Some(n) = notes {
+                    updates.push("notes = ?");
+                    params.push(Box::new(n));
+                } else {
+                    updates.push("notes = NULL");
+                }
+            }
+
+            if request.ingredients.is_some() {
+                if let Some(i) = ingredients_json {
+                    updates.push("ingredients_json = ?");
+                    params.push(Box::new(i));
+                } else {
+                    updates.push("ingredients_json = NULL");
+                }
+            }
+
+            // Always update the updated_at timestamp
+            updates.push("updated_at = CURRENT_TIMESTAMP");
+
+            if updates.is_empty() {
+                return Ok(());
+            }
+
+            let query = format!(
+                "UPDATE fermentations SET {} WHERE id = ? AND user_id = ?",
+                updates.join(", ")
+            );
+
+            params.push(Box::new(id));
+            params.push(Box::new(user_id));
+
+            let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+
+            conn.execute(&query, params_refs.as_slice())?;
+
+            Ok(())
+        })
+        .await??;
+
+        // Return the updated fermentation
+        self.find_by_id(id, user_id).await
     }
 }
 
