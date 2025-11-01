@@ -5,7 +5,9 @@ use axum::{
 use std::sync::Arc;
 use time::Duration;
 use tower::ServiceBuilder;
-use tower_http::{compression::CompressionLayer, cors::CorsLayer, trace::TraceLayer};
+use tower_http::{
+    compression::CompressionLayer, cors::CorsLayer, services::ServeDir, trace::TraceLayer,
+};
 use tower_sessions::{Expiry, SessionManagerLayer};
 use tower_sessions_rusqlite_store::{tokio_rusqlite, RusqliteStore};
 
@@ -13,6 +15,7 @@ pub mod admin;
 pub mod config;
 pub mod database;
 pub mod fermentation;
+pub mod photos;
 pub mod templates;
 pub mod users;
 
@@ -38,6 +41,10 @@ pub async fn create_router(app_state: AppState) -> Router {
     // Create session layer with 24 hour expiration
     let session_layer = SessionManagerLayer::new(session_store)
         .with_expiry(Expiry::OnInactivity(Duration::hours(24)));
+
+    // Create uploads directory if it doesn't exist
+    let uploads_dir = app_state.config.uploads_dir.clone();
+    std::fs::create_dir_all(&uploads_dir).expect("Failed to create uploads directory");
 
     Router::new()
         .route("/", get(crate::templates::home_handler))
@@ -91,6 +98,15 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/api/admin/users/:id",
             axum::routing::delete(crate::admin::delete_user),
         )
+        .route(
+            "/api/fermentation/:id/photos",
+            post(crate::photos::upload_photo),
+        )
+        .route(
+            "/api/fermentation/:id/photos",
+            get(crate::photos::list_photos),
+        )
+        .nest_service("/uploads", ServeDir::new(&uploads_dir))
         .with_state(app_state)
         .layer(
             ServiceBuilder::new()

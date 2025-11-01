@@ -81,6 +81,7 @@ pub async fn new_fermentation_handler(session: Session) -> Result<Html<String>, 
 pub struct FermentationDetailTemplate {
     pub title: String,
     pub fermentation: Fermentation,
+    pub photos: Vec<crate::photos::FermentationPhoto>,
 }
 
 pub async fn fermentation_detail_handler(
@@ -93,13 +94,24 @@ pub async fn fermentation_detail_handler(
 
     if let Some(user) = user_session {
         let repo = FermentationRepository::new(state.db.clone());
+        let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
 
         // Fetch the fermentation by ID, ensuring it belongs to the current user
         match repo.find_by_id(id, user.user_id).await {
             Ok(Some(fermentation)) => {
+                // Fetch photos for this fermentation
+                let photos = photo_repo
+                    .find_by_fermentation(id)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::error!("Error fetching photos: {}", e);
+                        Vec::new()
+                    });
+
                 let template = FermentationDetailTemplate {
                     title: format!("{} - Raugupatis Log", fermentation.name),
                     fermentation,
+                    photos,
                 };
 
                 Ok(Html(template.render().unwrap_or_else(|e| {
