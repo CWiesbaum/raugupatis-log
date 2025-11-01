@@ -308,7 +308,7 @@
                             <th>Name</th>
                             <th>Type</th>
                             <th>Duration (days)</th>
-                            <th>Temperature (°F)</th>
+                            <th>Temperature (<span id="temp-unit-display">{% if temp_unit == "celsius" %}°C{% else %}°F{% endif %}</span>)</th>
                             <th>Description</th>
                             <th>Status</th>
                             <th>Created</th>
@@ -322,7 +322,7 @@
                             <td>{{ profile.type }}</td>
                             <td>{{ profile.min_days }}-{{ profile.max_days }} days</td>
                             <td>
-                                <span class="temp-range">{{ profile.temp_min }}°F - {{ profile.temp_max }}°F</span>
+                                <span class="temp-range" data-temp-min="{{ profile.temp_min }}" data-temp-max="{{ profile.temp_max }}"></span>
                             </td>
                             <td>
                                 {% match profile.description %}
@@ -385,12 +385,12 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label for="create-temp-min">Min Temp (°F) *</label>
-                        <input type="number" id="create-temp-min" required step="0.1" placeholder="65.0">
+                        <label for="create-temp-min">Min Temp (<span class="temp-unit-label">{% if temp_unit == "celsius" %}°C{% else %}°F{% endif %}</span>) *</label>
+                        <input type="number" id="create-temp-min" required step="0.1" placeholder="{% if temp_unit == "celsius" %}18.3{% else %}65.0{% endif %}">
                     </div>
                     <div class="form-group">
-                        <label for="create-temp-max">Max Temp (°F) *</label>
-                        <input type="number" id="create-temp-max" required step="0.1" placeholder="75.0">
+                        <label for="create-temp-max">Max Temp (<span class="temp-unit-label">{% if temp_unit == "celsius" %}°C{% else %}°F{% endif %}</span>) *</label>
+                        <input type="number" id="create-temp-max" required step="0.1" placeholder="{% if temp_unit == "celsius" %}23.9{% else %}75.0{% endif %}">
                     </div>
                 </div>
                 <div class="form-group">
@@ -430,6 +430,35 @@
     </div>
 
     <script>
+        const userTempUnit = '{{ temp_unit }}'; // User's preferred temperature unit
+        
+        // Temperature conversion functions
+        function fahrenheitToCelsius(f) {
+            return (f - 32) * 5 / 9;
+        }
+        
+        function celsiusToFahrenheit(c) {
+            return (c * 9 / 5) + 32;
+        }
+        
+        function convertTempForDisplay(tempF) {
+            if (userTempUnit === 'celsius') {
+                return fahrenheitToCelsius(tempF).toFixed(1);
+            }
+            return tempF.toFixed(1);
+        }
+        
+        function convertTempForStorage(tempValue) {
+            if (userTempUnit === 'celsius') {
+                return celsiusToFahrenheit(parseFloat(tempValue));
+            }
+            return parseFloat(tempValue);
+        }
+        
+        function getTempSymbol() {
+            return userTempUnit === 'celsius' ? '°C' : '°F';
+        }
+        
         function showMessage(message, isError = false) {
             const container = document.getElementById('messageContainer');
             const div = document.createElement('div');
@@ -467,8 +496,8 @@
                 type: document.getElementById('create-type').value,
                 min_days: parseInt(document.getElementById('create-min-days').value),
                 max_days: parseInt(document.getElementById('create-max-days').value),
-                temp_min: parseFloat(document.getElementById('create-temp-min').value),
-                temp_max: parseFloat(document.getElementById('create-temp-max').value),
+                temp_min: convertTempForStorage(document.getElementById('create-temp-min').value),
+                temp_max: convertTempForStorage(document.getElementById('create-temp-max').value),
                 description: document.getElementById('create-description').value || null,
             };
 
@@ -551,6 +580,21 @@
                 event.target.classList.remove('active');
             }
         }
+        
+        // Convert temperatures on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const tempRanges = document.querySelectorAll('.temp-range');
+            tempRanges.forEach(span => {
+                const tempMinF = parseFloat(span.dataset.tempMin);
+                const tempMaxF = parseFloat(span.dataset.tempMax);
+                
+                const tempMinDisplay = convertTempForDisplay(tempMinF);
+                const tempMaxDisplay = convertTempForDisplay(tempMaxF);
+                const symbol = getTempSymbol();
+                
+                span.textContent = `${tempMinDisplay}${symbol} - ${tempMaxDisplay}${symbol}`;
+            });
+        });
     </script>
 </body>
 </html>

@@ -220,6 +220,17 @@
                 </div>
             </div>
             
+            <div class="form-group">
+                <label for="preferred_temp_unit">Preferred Temperature Unit</label>
+                <select id="preferred_temp_unit" name="preferred_temp_unit" required>
+                    <option value="fahrenheit" {% if user.preferred_temp_unit == "fahrenheit" %}selected{% endif %}>Fahrenheit (°F)</option>
+                    <option value="celsius" {% if user.preferred_temp_unit == "celsius" %}selected{% endif %}>Celsius (°C)</option>
+                </select>
+                <div class="experience-description" id="tempUnitDescription">
+                    Choose your preferred temperature unit for displaying fermentation temperatures.
+                </div>
+            </div>
+            
             <button type="submit" id="submitButton">Update Profile</button>
         </form>
         
@@ -275,8 +286,11 @@
             submitButton.textContent = 'Updating...';
             messageDiv.classList.remove('show', 'success', 'error');
 
+            const tempUnitSelect = document.getElementById('preferred_temp_unit');
+            
             const profileData = {
-                experience_level: experienceSelect.value
+                experience_level: experienceSelect.value,
+                preferred_temp_unit: tempUnitSelect.value
             };
             
             // Always send both names to prevent accidental clearing

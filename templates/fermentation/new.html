@@ -311,6 +311,21 @@
 
     <script>
         let profiles = [];
+        const userTempUnit = '{{ temp_unit }}'; // User's preferred temperature unit
+        
+        // Temperature conversion functions
+        function fahrenheitToCelsius(f) {
+            return (f - 32) * 5 / 9;
+        }
+        
+        function formatTemp(tempF) {
+            if (userTempUnit === 'celsius') {
+                const tempC = fahrenheitToCelsius(tempF);
+                return `${tempC.toFixed(1)}°C`;
+            } else {
+                return `${tempF}°F`;
+            }
+        }
         
         // Load fermentation profiles on page load
         async function loadProfiles() {
@@ -348,10 +363,13 @@
             if (option.dataset.description) {
                 const minDays = option.dataset.minDays;
                 const maxDays = option.dataset.maxDays;
-                const tempMin = option.dataset.tempMin;
-                const tempMax = option.dataset.tempMax;
+                const tempMin = parseFloat(option.dataset.tempMin);
+                const tempMax = parseFloat(option.dataset.tempMax);
                 
-                descDiv.textContent = `${option.dataset.description} | Duration: ${minDays}-${maxDays} days | Temp: ${tempMin}°F-${tempMax}°F`;
+                const tempMinDisplay = formatTemp(tempMin);
+                const tempMaxDisplay = formatTemp(tempMax);
+                
+                descDiv.textContent = `${option.dataset.description} | Duration: ${minDays}-${maxDays} days | Temp: ${tempMinDisplay}-${tempMaxDisplay}`;
             } else {
                 descDiv.textContent = '';
             }

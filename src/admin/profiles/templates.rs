@@ -15,6 +15,7 @@ use crate::AppState;
 pub struct AdminProfilesListTemplate {
     pub title: String,
     pub profiles: Vec<AdminProfileResponse>,
+    pub temp_unit: String,
 }
 
 /// Handler for admin profiles list page
@@ -36,6 +37,17 @@ pub async fn admin_profiles_list_handler(
         _ => return Err(Redirect::to("/dashboard")),
     }
 
+    // Fetch user's temperature preference
+    let user_repo = crate::users::UserRepository::new(state.db.clone());
+    let temp_unit = user_repo
+        .find_by_id(user_session.user_id)
+        .await
+        .map(|u| u.preferred_temp_unit.as_str().to_string())
+        .unwrap_or_else(|e| {
+            tracing::warn!("Could not fetch user temperature preference: {}", e);
+            "fahrenheit".to_string()
+        });
+
     // Fetch all profiles (including inactive)
     let repo = AdminProfileRepository::new(state.db.clone());
     let profiles = repo
@@ -51,6 +63,7 @@ pub async fn admin_profiles_list_handler(
     let template = AdminProfilesListTemplate {
         title: "Fermentation Profile Administration - Raugupatis Log".to_string(),
         profiles: profile_responses,
+        temp_unit,
     };
 
     Ok(Html(

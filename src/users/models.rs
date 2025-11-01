@@ -1,6 +1,47 @@
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(rename_all = "lowercase")]
+pub enum TemperatureUnit {
+    Fahrenheit,
+    Celsius,
+}
+
+impl TemperatureUnit {
+    pub fn as_str(&self) -> &str {
+        match self {
+            TemperatureUnit::Fahrenheit => "fahrenheit",
+            TemperatureUnit::Celsius => "celsius",
+        }
+    }
+
+    pub fn is_valid(s: &str) -> bool {
+        matches!(s, "fahrenheit" | "celsius")
+    }
+}
+
+impl std::fmt::Display for TemperatureUnit {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl PartialEq<&str> for TemperatureUnit {
+    fn eq(&self, other: &&str) -> bool {
+        self.as_str() == *other
+    }
+}
+
+impl From<String> for TemperatureUnit {
+    fn from(s: String) -> Self {
+        match s.as_str() {
+            "celsius" => TemperatureUnit::Celsius,
+            _ => TemperatureUnit::Fahrenheit,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum UserRole {
@@ -85,6 +126,7 @@ pub struct User {
     pub password_hash: String,
     pub role: UserRole,
     pub experience_level: ExperienceLevel,
+    pub preferred_temp_unit: TemperatureUnit,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub is_locked: bool,
@@ -110,6 +152,7 @@ pub struct UserResponse {
     pub email: String,
     pub role: UserRole,
     pub experience_level: ExperienceLevel,
+    pub preferred_temp_unit: TemperatureUnit,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub created_at: DateTime<Utc>,
@@ -122,6 +165,7 @@ impl From<User> for UserResponse {
             email: user.email,
             role: user.role,
             experience_level: user.experience_level,
+            preferred_temp_unit: user.preferred_temp_unit,
             first_name: user.first_name,
             last_name: user.last_name,
             created_at: user.created_at,
@@ -154,6 +198,7 @@ pub struct UserSession {
 #[derive(Debug, Deserialize)]
 pub struct UpdateProfileRequest {
     pub experience_level: String,
+    pub preferred_temp_unit: String,
     #[serde(default)]
     pub first_name: Option<String>,
     #[serde(default)]
