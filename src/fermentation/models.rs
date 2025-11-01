@@ -42,6 +42,7 @@ pub struct FermentationProfile {
     pub temp_min: f64,
     pub temp_max: f64,
     pub description: Option<String>,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
 
