@@ -1,6 +1,6 @@
 use crate::database::Database;
 use crate::users::auth::hash_password;
-use crate::users::models::{ExperienceLevel, User, UserRole};
+use crate::users::models::{ExperienceLevel, TemperatureUnit, User, UserRole};
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
 use std::sync::Arc;
@@ -24,7 +24,7 @@ impl AdminUserRepository {
             let conn = db.get_connection().lock().unwrap();
 
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, is_locked, created_at, updated_at
+                "SELECT id, email, password_hash, role, experience_level, preferred_temp_unit, first_name, last_name, is_locked, created_at, updated_at
                  FROM users ORDER BY created_at DESC"
             )?;
 
@@ -36,11 +36,12 @@ impl AdminUserRepository {
                         password_hash: row.get(2)?,
                         role: UserRole::from(row.get::<_, String>(3)?),
                         experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
-                        first_name: row.get(5)?,
-                        last_name: row.get(6)?,
-                        is_locked: row.get::<_, i64>(7)? != 0,
-                        created_at: parse_datetime(row.get::<_, String>(8)?),
-                        updated_at: parse_datetime(row.get::<_, String>(9)?),
+                        preferred_temp_unit: TemperatureUnit::from(row.get::<_, String>(5)?),
+                        first_name: row.get(6)?,
+                        last_name: row.get(7)?,
+                        is_locked: row.get::<_, i64>(8)? != 0,
+                        created_at: parse_datetime(row.get::<_, String>(9)?),
+                        updated_at: parse_datetime(row.get::<_, String>(10)?),
                     })
                 })?
                 .collect::<Result<Vec<_>, _>>()?;
@@ -168,7 +169,7 @@ impl AdminUserRepository {
             let conn = db.get_connection().lock().unwrap();
 
             let mut stmt = conn.prepare(
-                "SELECT id, email, password_hash, role, experience_level, first_name, last_name, is_locked, created_at, updated_at
+                "SELECT id, email, password_hash, role, experience_level, preferred_temp_unit, first_name, last_name, is_locked, created_at, updated_at
                  FROM users WHERE id = ?1"
             )?;
 
@@ -179,11 +180,12 @@ impl AdminUserRepository {
                     password_hash: row.get(2)?,
                     role: UserRole::from(row.get::<_, String>(3)?),
                     experience_level: ExperienceLevel::from(row.get::<_, String>(4)?),
-                    first_name: row.get(5)?,
-                    last_name: row.get(6)?,
-                    is_locked: row.get::<_, i64>(7)? != 0,
-                    created_at: parse_datetime(row.get::<_, String>(8)?),
-                    updated_at: parse_datetime(row.get::<_, String>(9)?),
+                    preferred_temp_unit: TemperatureUnit::from(row.get::<_, String>(5)?),
+                    first_name: row.get(6)?,
+                    last_name: row.get(7)?,
+                    is_locked: row.get::<_, i64>(8)? != 0,
+                    created_at: parse_datetime(row.get::<_, String>(9)?),
+                    updated_at: parse_datetime(row.get::<_, String>(10)?),
                 })
             })?;
 

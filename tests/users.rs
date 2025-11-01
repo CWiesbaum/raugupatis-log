@@ -582,7 +582,8 @@ async fn test_update_profile_success() {
 
     // Update profile with session cookie
     let update_body = json!({
-        "experience_level": "advanced"
+        "experience_level": "advanced",
+        "preferred_temp_unit": "fahrenheit"
     });
 
     let app3 = raugupatis_log::create_router(app_state).await;
@@ -615,7 +616,8 @@ async fn test_update_profile_unauthorized() {
     let app = common::create_test_app().await;
 
     let update_body = json!({
-        "experience_level": "advanced"
+        "experience_level": "advanced",
+        "preferred_temp_unit": "fahrenheit"
     });
 
     let response = app
@@ -685,7 +687,8 @@ async fn test_update_profile_invalid_experience_level() {
 
     // Try to update with invalid experience level
     let update_body = json!({
-        "experience_level": "invalid"
+        "experience_level": "invalid",
+        "preferred_temp_unit": "fahrenheit"
     });
 
     let app3 = raugupatis_log::create_router(app_state).await;
@@ -827,6 +830,7 @@ async fn test_update_profile_with_names() {
     // Update profile with names
     let update_body = json!({
         "experience_level": "intermediate",
+        "preferred_temp_unit": "fahrenheit",
         "first_name": "Jane",
         "last_name": "Smith"
     });
@@ -1150,7 +1154,8 @@ async fn test_update_profile_preserves_names_when_not_provided() {
     // Update profile with only experience level (no names in request)
     // This tests the API behavior when names are omitted from the request
     let update_body = json!({
-        "experience_level": "advanced"
+        "experience_level": "advanced",
+        "preferred_temp_unit": "fahrenheit"
     });
 
     let app3 = raugupatis_log::create_router(app_state).await;
