@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            margin: 0;
+            padding: 1rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            max-width: 700px;
+            width: 100%;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        .emoji {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            font-size: 1rem;
+        }
+        .required {
+            color: #ff6b6b;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.15);
+        }
+        select {
+            cursor: pointer;
+        }
+        select option {
+            background: #764ba2;
+            color: white;
+        }
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+        .help-text {
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+            opacity: 0.8;
+        }
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+        button {
+            flex: 1;
+            padding: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover:not(:disabled) {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+            transform: translateY(-2px);
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-primary {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.6);
+        }
+        .btn-primary:hover:not(:disabled) {
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+        }
+        .btn-secondary {
+            background: rgba(158, 158, 158, 0.3);
+            border-color: rgba(158, 158, 158, 0.6);
+        }
+        .btn-secondary:hover {
+            background: rgba(158, 158, 158, 0.5);
+            border-color: rgba(158, 158, 158, 0.8);
+        }
+        .error-message {
+            background: rgba(244, 67, 54, 0.3);
+            border: 2px solid rgba(244, 67, 54, 0.6);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .error-message.show {
+            display: block;
+        }
+        .success-message {
+            background: rgba(76, 175, 80, 0.3);
+            border: 2px solid rgba(76, 175, 80, 0.6);
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            display: none;
+        }
+        .success-message.show {
+            display: block;
+        }
+        .loading {
+            text-align: center;
+            padding: 1rem;
+            display: none;
+        }
+        .loading.show {
+            display: block;
+        }
+        .back-link {
+            text-align: center;
+            margin-top: 1.5rem;
+        }
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            opacity: 0.9;
+            transition: opacity 0.3s ease;
+        }
+        .back-link a:hover {
+            opacity: 1;
+            text-decoration: underline;
+        }
+        
+        /* Mobile responsive styles */
+        @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            .container {
+                padding: 1.5rem;
+            }
+            h1 {
+                font-size: 1.75rem;
+            }
+            .emoji {
+                font-size: 3rem;
+            }
+            .button-group {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="emoji">✏️</div>
+            <h1>Edit Fermentation</h1>
+        </div>
+        
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+        <div class="loading" id="loading">Updating fermentation...</div>
+        
+        <form id="fermentationForm">
+            <div class="form-group">
+                <label for="name">Batch Name <span class="required">*</span></label>
+                <input 
+                    type="text" 
+                    id="name" 
+                    name="name" 
+                    placeholder="e.g., Summer Pickles 2024" 
+                    required
+                    maxlength="255"
+                    value="{{ fermentation.name }}"
+                />
+                <div class="help-text">Give your fermentation a memorable name</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="active" {% if fermentation.status.as_str() == "active" %}selected{% endif %}>Active</option>
+                    <option value="paused" {% if fermentation.status.as_str() == "paused" %}selected{% endif %}>Paused</option>
+                    <option value="completed" {% if fermentation.status.as_str() == "completed" %}selected{% endif %}>Completed</option>
+                    <option value="failed" {% if fermentation.status.as_str() == "failed" %}selected{% endif %}>Failed</option>
+                </select>
+                <div class="help-text">Current status of your fermentation</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="start_date">Start Date <span class="required">*</span></label>
+                <input 
+                    type="datetime-local" 
+                    id="start_date" 
+                    name="start_date" 
+                    required
+                />
+                <div class="help-text">When did you start this fermentation?</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="target_end_date">Target End Date</label>
+                <input 
+                    type="datetime-local" 
+                    id="target_end_date" 
+                    name="target_end_date"
+                />
+                <div class="help-text">When do you plan to complete this? (Optional)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="actual_end_date">Actual End Date</label>
+                <input 
+                    type="datetime-local" 
+                    id="actual_end_date" 
+                    name="actual_end_date"
+                />
+                <div class="help-text">When did you actually complete this? (Optional)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="success_rating">Success Rating</label>
+                <select id="success_rating" name="success_rating">
+                    <option value="">-- Not rated --</option>
+                    <option value="1" {% match fermentation.success_rating %}{% when Some with (1) %}selected{% when _ %}{% endmatch %}>⭐ - Poor</option>
+                    <option value="2" {% match fermentation.success_rating %}{% when Some with (2) %}selected{% when _ %}{% endmatch %}>⭐⭐ - Fair</option>
+                    <option value="3" {% match fermentation.success_rating %}{% when Some with (3) %}selected{% when _ %}{% endmatch %}>⭐⭐⭐ - Good</option>
+                    <option value="4" {% match fermentation.success_rating %}{% when Some with (4) %}selected{% when _ %}{% endmatch %}>⭐⭐⭐⭐ - Very Good</option>
+                    <option value="5" {% match fermentation.success_rating %}{% when Some with (5) %}selected{% when _ %}{% endmatch %}>⭐⭐⭐⭐⭐ - Excellent</option>
+                </select>
+                <div class="help-text">How successful was this fermentation? (Optional)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="ingredients">Ingredients</label>
+                <textarea 
+                    id="ingredients" 
+                    name="ingredients" 
+                    placeholder="e.g., 2 lbs cucumbers, 2 tbsp sea salt, 4 cups water, dill, garlic"
+                >{% match fermentation.ingredients_json %}{% when Some with (ingredients) %}{{ ingredients }}{% when None %}{% endmatch %}</textarea>
+                <div class="help-text">List the ingredients you're using (Optional)</div>
+            </div>
+            
+            <div class="form-group">
+                <label for="notes">Notes</label>
+                <textarea 
+                    id="notes" 
+                    name="notes" 
+                    placeholder="Any observations, recipe variations, or special techniques..."
+                >{% match fermentation.notes %}{% when Some with (notes) %}{{ notes }}{% when None %}{% endmatch %}</textarea>
+                <div class="help-text">Add any notes about this batch (Optional)</div>
+            </div>
+            
+            <div class="button-group">
+                <button type="button" class="btn-secondary" id="cancelButton">Cancel</button>
+                <button type="submit" class="btn-primary" id="submitButton">Update Fermentation</button>
+            </div>
+        </form>
+        
+        <div class="back-link">
+            <a href="/fermentation/{{ fermentation.id }}">&larr; Back to Fermentation Details</a>
+        </div>
+    </div>
+
+    <script>
+        const fermentationId = {{ fermentation.id }};
+        
+        // Convert UTC datetime to local datetime-local format
+        function utcToLocal(utcDateString) {
+            if (!utcDateString) return '';
+            const date = new Date(utcDateString);
+            // Format for datetime-local input: YYYY-MM-DDTHH:mm
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            const hours = String(date.getHours()).padStart(2, '0');
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            return `${year}-${month}-${day}T${hours}:${minutes}`;
+        }
+        
+        // Convert local datetime-local to ISO 8601 UTC format
+        function localToUtc(localDateString) {
+            if (!localDateString) return null;
+            const date = new Date(localDateString);
+            return date.toISOString();
+        }
+        
+        // Initialize form with existing values
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set start date
+            const startDate = '{{ fermentation.start_date.to_rfc3339() }}';
+            document.getElementById('start_date').value = utcToLocal(startDate);
+            
+            // Set target end date if exists
+            {% match fermentation.target_end_date %}
+            {% when Some with (target_end) %}
+            document.getElementById('target_end_date').value = utcToLocal('{{ target_end.to_rfc3339() }}');
+            {% when None %}
+            {% endmatch %}
+            
+            // Set actual end date if exists
+            {% match fermentation.actual_end_date %}
+            {% when Some with (actual_end) %}
+            document.getElementById('actual_end_date').value = utcToLocal('{{ actual_end.to_rfc3339() }}');
+            {% when None %}
+            {% endmatch %}
+        });
+        
+        // Cancel button handler
+        document.getElementById('cancelButton').addEventListener('click', () => {
+            window.location.href = `/fermentation/${fermentationId}`;
+        });
+        
+        // Form submit handler
+        document.getElementById('fermentationForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const errorMessage = document.getElementById('errorMessage');
+            const successMessage = document.getElementById('successMessage');
+            const loading = document.getElementById('loading');
+            const submitButton = document.getElementById('submitButton');
+            
+            // Hide previous messages
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+            
+            // Get form values
+            const formData = new FormData(e.target);
+            const data = {};
+            
+            // Only include fields that have been provided
+            const name = formData.get('name').trim();
+            if (name) data.name = name;
+            
+            const status = formData.get('status');
+            if (status) data.status = status;
+            
+            const startDate = formData.get('start_date');
+            if (startDate) data.start_date = localToUtc(startDate);
+            
+            const targetEndDate = formData.get('target_end_date');
+            if (targetEndDate) {
+                data.target_end_date = localToUtc(targetEndDate);
+            }
+            
+            const actualEndDate = formData.get('actual_end_date');
+            if (actualEndDate) {
+                data.actual_end_date = localToUtc(actualEndDate);
+            }
+            
+            const successRating = formData.get('success_rating');
+            if (successRating) {
+                data.success_rating = parseInt(successRating);
+            }
+            
+            const ingredients = formData.get('ingredients').trim();
+            if (ingredients) {
+                data.ingredients = ingredients;
+            }
+            
+            const notes = formData.get('notes').trim();
+            if (notes) {
+                data.notes = notes;
+            }
+            
+            // Validate name
+            if (!name) {
+                errorMessage.textContent = 'Batch name is required';
+                errorMessage.classList.add('show');
+                return;
+            }
+            
+            if (name.length > 255) {
+                errorMessage.textContent = 'Batch name must be 255 characters or less';
+                errorMessage.classList.add('show');
+                return;
+            }
+            
+            // Show loading state
+            loading.classList.add('show');
+            submitButton.disabled = true;
+            
+            try {
+                const response = await fetch(`/api/fermentation/${fermentationId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    let errorText = 'Failed to update fermentation';
+                    if (response.status === 400) {
+                        errorText = 'Invalid data provided. Please check your inputs.';
+                    } else if (response.status === 401) {
+                        errorText = 'You are not authorized to update this fermentation.';
+                    } else if (response.status === 404) {
+                        errorText = 'Fermentation not found.';
+                    }
+                    throw new Error(errorText);
+                }
+                
+                // Success - show message and redirect
+                successMessage.textContent = 'Fermentation updated successfully! Redirecting...';
+                successMessage.classList.add('show');
+                
+                setTimeout(() => {
+                    window.location.href = `/fermentation/${fermentationId}`;
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error updating fermentation:', error);
+                errorMessage.textContent = error.message;
+                errorMessage.classList.add('show');
+                submitButton.disabled = false;
+            } finally {
+                loading.classList.remove('show');
+            }
+        });
+    </script>
+</body>
+</html>

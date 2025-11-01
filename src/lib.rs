@@ -57,12 +57,20 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/fermentation/:id",
             get(crate::fermentation::fermentation_detail_handler),
         )
+        .route(
+            "/fermentation/:id/edit",
+            get(crate::fermentation::edit_fermentation_handler),
+        )
         .route("/profile", get(crate::users::profile_handler))
         .route(
             "/profile/change-password",
             get(crate::users::change_password_handler),
         )
         .route("/admin/users", get(crate::admin::admin_users_list_handler))
+        .route(
+            "/admin/profiles",
+            get(crate::admin::admin_profiles_list_handler),
+        )
         .route("/api/users/register", post(crate::users::register_user))
         .route("/api/users/login", post(crate::users::login_user))
         .route("/api/users/logout", post(crate::users::logout_user))
@@ -78,6 +86,10 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/api/fermentation",
             post(crate::fermentation::create_fermentation),
         )
+        .route(
+            "/api/fermentation/:id",
+            axum::routing::put(crate::fermentation::update_fermentation),
+        )
         .route("/api/users/profile", post(crate::users::update_profile))
         .route("/api/users/password", post(crate::users::change_password))
         .route("/api/admin/users", get(crate::admin::list_users))
@@ -90,6 +102,19 @@ pub async fn create_router(app_state: AppState) -> Router {
         .route(
             "/api/admin/users/:id",
             axum::routing::delete(crate::admin::delete_user),
+        )
+        .route(
+            "/api/admin/profiles",
+            get(crate::admin::list_all_profiles),
+        )
+        .route("/api/admin/profiles", post(crate::admin::create_profile))
+        .route(
+            "/api/admin/profiles/:id/copy",
+            post(crate::admin::copy_profile),
+        )
+        .route(
+            "/api/admin/profiles/:id/status",
+            post(crate::admin::set_profile_active_status),
         )
         .with_state(app_state)
         .layer(

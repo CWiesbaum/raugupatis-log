@@ -42,6 +42,7 @@ pub struct FermentationProfile {
     pub temp_min: f64,
     pub temp_max: f64,
     pub description: Option<String>,
+    pub is_active: bool,
     pub created_at: DateTime<Utc>,
 }
 
@@ -158,6 +159,18 @@ pub struct CreateFermentationRequest {
     pub name: String,
     pub start_date: String,              // ISO 8601 format
     pub target_end_date: Option<String>, // ISO 8601 format
+    pub notes: Option<String>,
+    pub ingredients: Option<String>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateFermentationRequest {
+    pub name: Option<String>,
+    pub start_date: Option<String>,       // ISO 8601 format
+    pub target_end_date: Option<String>,  // ISO 8601 format
+    pub actual_end_date: Option<String>,  // ISO 8601 format
+    pub status: Option<String>,
+    pub success_rating: Option<i32>,
     pub notes: Option<String>,
     pub ingredients: Option<String>,
 }
