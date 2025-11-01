@@ -544,7 +544,7 @@ async fn test_fermentation_detail_page_displays_correctly() {
     let response = app4
         .oneshot(
             Request::builder()
-                .uri(&format!("/fermentation/{}", fermentation_id))
+                .uri(format!("/fermentation/{}", fermentation_id))
                 .header("Cookie", cookie_header)
                 .body(Body::empty())
                 .unwrap(),
@@ -703,7 +703,7 @@ async fn test_fermentation_detail_cannot_access_other_users_fermentation() {
     let response = app6
         .oneshot(
             Request::builder()
-                .uri(&format!("/fermentation/{}", fermentation_id))
+                .uri(format!("/fermentation/{}", fermentation_id))
                 .header("Cookie", user2_cookie)
                 .body(Body::empty())
                 .unwrap(),

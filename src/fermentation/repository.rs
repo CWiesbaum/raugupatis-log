@@ -181,7 +181,7 @@ impl FermentationRepository {
             let conn = db.get_connection().lock().unwrap();
 
             let mut stmt = conn.prepare(
-                "SELECT id, name, type, min_days, max_days, temp_min, temp_max, description, created_at
+                "SELECT id, name, type, min_days, max_days, temp_min, temp_max, description, is_active, created_at
                  FROM fermentation_profiles WHERE id = ?1"
             )?;
 
@@ -195,7 +195,8 @@ impl FermentationRepository {
                     temp_min: row.get(5)?,
                     temp_max: row.get(6)?,
                     description: row.get(7)?,
-                    created_at: parse_datetime(row.get::<_, String>(8)?),
+                    is_active: row.get::<_, i32>(8)? != 0,
+                    created_at: parse_datetime(row.get::<_, String>(9)?),
                 })
             }).optional()?;
 
@@ -213,8 +214,8 @@ impl FermentationRepository {
             let conn = db.get_connection().lock().unwrap();
 
             let mut stmt = conn.prepare(
-                "SELECT id, name, type, min_days, max_days, temp_min, temp_max, description, created_at
-                 FROM fermentation_profiles ORDER BY name"
+                "SELECT id, name, type, min_days, max_days, temp_min, temp_max, description, is_active, created_at
+                 FROM fermentation_profiles WHERE is_active = 1 ORDER BY name"
             )?;
 
             let profiles = stmt.query_map([], |row| {
@@ -227,7 +228,8 @@ impl FermentationRepository {
                     temp_min: row.get(5)?,
                     temp_max: row.get(6)?,
                     description: row.get(7)?,
-                    created_at: parse_datetime(row.get::<_, String>(8)?),
+                    is_active: row.get::<_, i32>(8)? != 0,
+                    created_at: parse_datetime(row.get::<_, String>(9)?),
                 })
             })?.collect::<Result<Vec<_>, _>>()?;
 
