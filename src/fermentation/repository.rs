@@ -1,7 +1,7 @@
 use crate::database::Database;
 use crate::fermentation::models::{
-    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationProfile,
-    FermentationStatus, TemperatureLog, UpdateFermentationRequest,
+    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationListQuery,
+    FermentationProfile, FermentationStatus, TemperatureLog, UpdateFermentationRequest,
 };
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
@@ -78,25 +78,92 @@ impl FermentationRepository {
     pub async fn find_all_by_user(
         &self,
         user_id: i64,
+        query: &FermentationListQuery,
     ) -> Result<Vec<Fermentation>, Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.clone();
+        let search = query.search.clone();
+        let status = query.status.clone();
+        let profile_type = query.profile_type.clone();
+        let sort_by = query
+            .sort_by
+            .clone()
+            .unwrap_or_else(|| "created_at".to_string());
+        let sort_order = query
+            .sort_order
+            .clone()
+            .unwrap_or_else(|| "desc".to_string());
 
         tokio::task::spawn_blocking(
             move || -> Result<Vec<Fermentation>, Box<dyn std::error::Error + Send + Sync>> {
                 let conn = db.get_connection().lock().unwrap();
 
-                let mut stmt = conn.prepare(
+                // Build dynamic WHERE clause
+                let mut where_clauses = vec!["f.user_id = ?1".to_string()];
+                let mut params: Vec<Box<dyn rusqlite::ToSql>> = vec![Box::new(user_id)];
+
+                // Add search filter
+                if let Some(search_term) = search {
+                    if !search_term.trim().is_empty() {
+                        where_clauses.push(
+                            "(f.name LIKE ? OR f.notes LIKE ? OR f.ingredients_json LIKE ?)"
+                                .to_string(),
+                        );
+                        let search_pattern = format!("%{}%", search_term);
+                        params.push(Box::new(search_pattern.clone()));
+                        params.push(Box::new(search_pattern.clone()));
+                        params.push(Box::new(search_pattern));
+                    }
+                }
+
+                // Add status filter
+                if let Some(status_filter) = status {
+                    if !status_filter.trim().is_empty() {
+                        where_clauses.push("f.status = ?".to_string());
+                        params.push(Box::new(status_filter));
+                    }
+                }
+
+                // Add profile type filter
+                if let Some(profile_type_filter) = profile_type {
+                    if !profile_type_filter.trim().is_empty() {
+                        where_clauses.push("p.type = ?".to_string());
+                        params.push(Box::new(profile_type_filter));
+                    }
+                }
+
+                // Build ORDER BY clause
+                let sort_column = match sort_by.as_str() {
+                    "name" => "f.name",
+                    "start_date" => "f.start_date",
+                    "status" => "f.status",
+                    _ => "f.created_at",
+                };
+
+                let order_direction = if sort_order.to_lowercase() == "asc" {
+                    "ASC"
+                } else {
+                    "DESC"
+                };
+
+                let query = format!(
                     "SELECT f.id, f.user_id, f.profile_id, f.name, f.start_date, f.target_end_date,
                         f.actual_end_date, f.status, f.success_rating, f.notes, f.ingredients_json,
                         f.created_at, f.updated_at, p.name as profile_name, p.type as profile_type
-                 FROM fermentations f
-                 LEFT JOIN fermentation_profiles p ON f.profile_id = p.id
-                 WHERE f.user_id = ?1
-                 ORDER BY f.created_at DESC",
-                )?;
+                     FROM fermentations f
+                     LEFT JOIN fermentation_profiles p ON f.profile_id = p.id
+                     WHERE {}
+                     ORDER BY {} {}",
+                    where_clauses.join(" AND "),
+                    sort_column,
+                    order_direction
+                );
+
+                let mut stmt = conn.prepare(&query)?;
+                let params_refs: Vec<&dyn rusqlite::ToSql> =
+                    params.iter().map(|p| p.as_ref()).collect();
 
                 let fermentations = stmt
-                    .query_map([user_id], |row| {
+                    .query_map(params_refs.as_slice(), |row| {
                         Ok(Fermentation {
                             id: row.get(0)?,
                             user_id: row.get(1)?,

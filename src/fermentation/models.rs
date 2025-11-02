@@ -349,6 +349,33 @@ mod tests {
     }
 }
 
+/// Query parameters for filtering and sorting fermentations list
+#[derive(Debug, Serialize, Deserialize)]
+pub struct FermentationListQuery {
+    /// Search term to filter by name, notes, or ingredients
+    pub search: Option<String>,
+    /// Filter by fermentation status
+    pub status: Option<String>,
+    /// Filter by profile type
+    pub profile_type: Option<String>,
+    /// Sort field: "name", "start_date", "status", "created_at"
+    pub sort_by: Option<String>,
+    /// Sort order: "asc" or "desc"
+    pub sort_order: Option<String>,
+}
+
+impl Default for FermentationListQuery {
+    fn default() -> Self {
+        Self {
+            search: None,
+            status: None,
+            profile_type: None,
+            sort_by: Some("created_at".to_string()),
+            sort_order: Some("desc".to_string()),
+        }
+    }
+}
+
 // Temperature logging models
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TemperatureLog {
