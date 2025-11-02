@@ -1732,3 +1732,572 @@ async fn test_fermentation_list_includes_thumbnails() {
         "/uploads/test_completed_end.jpg"
     );
 }
+
+#[tokio::test]
+async fn test_fermentation_list_search_by_name() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "search_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "search_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create multiple fermentations with different names
+    let fermentation1 = json!({
+        "profile_id": 1,
+        "name": "Spicy Pickles",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let fermentation2 = json!({
+        "profile_id": 1,
+        "name": "Sweet Pickles",
+        "start_date": "2024-01-16T10:00:00Z",
+    });
+
+    let fermentation3 = json!({
+        "profile_id": 1,
+        "name": "Kimchi Batch",
+        "start_date": "2024-01-17T10:00:00Z",
+    });
+
+    for ferm_body in [fermentation1, fermentation2, fermentation3] {
+        let app = raugupatis_log::create_router(app_state.clone()).await;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/fermentation")
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .header("Cookie", cookie_header)
+                    .body(Body::from(serde_json::to_string(&ferm_body).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+    }
+
+    // Search for "Pickles"
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?search=Pickles")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should only return the two fermentations with "Pickles" in the name
+    assert_eq!(fermentations.len(), 2);
+    assert!(fermentations.iter().all(|f| f["name"]
+        .as_str()
+        .unwrap()
+        .contains("Pickles")));
+}
+
+#[tokio::test]
+async fn test_fermentation_list_filter_by_status() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "filter_status@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "filter_status@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create fermentations with different statuses
+    let fermentation1 = json!({
+        "profile_id": 1,
+        "name": "Active Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&fermentation1).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let ferm1: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let ferm1_id = ferm1["id"].as_i64().unwrap();
+
+    // Create another fermentation and mark it as completed
+    let fermentation2 = json!({
+        "profile_id": 1,
+        "name": "Completed Fermentation",
+        "start_date": "2024-01-10T10:00:00Z",
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&fermentation2).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let ferm2: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let ferm2_id = ferm2["id"].as_i64().unwrap();
+
+    // Update second fermentation to completed
+    let update_body = json!({
+        "status": "completed",
+        "actual_end_date": "2024-01-17T10:00:00Z",
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}", ferm2_id))
+                .method("PUT")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Filter by active status
+    let app6 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app6
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?status=active")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should only return the active fermentation
+    assert_eq!(fermentations.len(), 1);
+    assert_eq!(fermentations[0]["status"], "active");
+    assert_eq!(fermentations[0]["id"], ferm1_id);
+
+    // Filter by completed status
+    let app7 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app7
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?status=completed")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should only return the completed fermentation
+    assert_eq!(fermentations.len(), 1);
+    assert_eq!(fermentations[0]["status"], "completed");
+    assert_eq!(fermentations[0]["id"], ferm2_id);
+}
+
+#[tokio::test]
+async fn test_fermentation_list_sort_by_name() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "sort_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "sort_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create fermentations with different names
+    let names = ["Zebra Pickles", "Apple Kimchi", "Mango Kombucha"];
+
+    for name in names {
+        let fermentation = json!({
+            "profile_id": 1,
+            "name": name,
+            "start_date": "2024-01-15T10:00:00Z",
+        });
+
+        let app = raugupatis_log::create_router(app_state.clone()).await;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/fermentation")
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .header("Cookie", cookie_header)
+                    .body(Body::from(serde_json::to_string(&fermentation).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+    }
+
+    // Sort by name ascending
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?sort_by=name&sort_order=asc")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(fermentations.len(), 3);
+    assert_eq!(fermentations[0]["name"], "Apple Kimchi");
+    assert_eq!(fermentations[1]["name"], "Mango Kombucha");
+    assert_eq!(fermentations[2]["name"], "Zebra Pickles");
+
+    // Sort by name descending
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?sort_by=name&sort_order=desc")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(fermentations.len(), 3);
+    assert_eq!(fermentations[0]["name"], "Zebra Pickles");
+    assert_eq!(fermentations[1]["name"], "Mango Kombucha");
+    assert_eq!(fermentations[2]["name"], "Apple Kimchi");
+}
+
+#[tokio::test]
+async fn test_fermentation_list_combined_search_and_filter() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "combined_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // Login
+    let login_body = json!({
+        "email": "combined_test@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .expect("Login should set a session cookie");
+
+    // Create multiple fermentations
+    let fermentations = [
+        ("Active Pickles", "active"),
+        ("Active Kimchi", "active"),
+        ("Completed Pickles", "active"),
+    ];
+
+    let mut created_ids = Vec::new();
+
+    for (name, _status) in fermentations {
+        let fermentation = json!({
+            "profile_id": 1,
+            "name": name,
+            "start_date": "2024-01-15T10:00:00Z",
+        });
+
+        let app = raugupatis_log::create_router(app_state.clone()).await;
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/api/fermentation")
+                    .method("POST")
+                    .header("Content-Type", "application/json")
+                    .header("Cookie", cookie_header)
+                    .body(Body::from(serde_json::to_string(&fermentation).unwrap()))
+                    .unwrap(),
+            )
+            .await
+            .unwrap();
+
+        assert_eq!(response.status(), StatusCode::CREATED);
+
+        let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+            .await
+            .unwrap();
+        let ferm: serde_json::Value = serde_json::from_slice(&body).unwrap();
+        created_ids.push(ferm["id"].as_i64().unwrap());
+    }
+
+    // Update the third fermentation to completed
+    let update_body = json!({
+        "status": "completed",
+        "actual_end_date": "2024-01-22T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}", created_ids[2]))
+                .method("PUT")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&update_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Search for "Pickles" AND filter by status "active"
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentations?search=Pickles&status=active")
+                .header("Cookie", cookie_header)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentations: Vec<serde_json::Value> = serde_json::from_slice(&body).unwrap();
+
+    // Should only return "Active Pickles" (not "Completed Pickles" or "Active Kimchi")
+    assert_eq!(fermentations.len(), 1);
+    assert_eq!(fermentations[0]["name"], "Active Pickles");
+    assert_eq!(fermentations[0]["status"], "active");
+}
