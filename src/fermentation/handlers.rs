@@ -1,7 +1,14 @@
-use axum::{extract::{Path, State}, http::StatusCode, Json};
+use axum::{
+    extract::{Path, Query, State},
+    http::StatusCode,
+    Json,
+};
 use tower_sessions::Session;
 
-use crate::fermentation::models::{CreateFermentationRequest, Fermentation, FermentationResponse, UpdateFermentationRequest};
+use crate::fermentation::models::{
+    CreateFermentationRequest, Fermentation, FermentationListQuery, FermentationResponse,
+    UpdateFermentationRequest,
+};
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
 use crate::AppState;
@@ -9,6 +16,7 @@ use crate::AppState;
 pub async fn list_fermentations(
     State(state): State<AppState>,
     session: Session,
+    Query(query): Query<FermentationListQuery>,
 ) -> Result<Json<Vec<Fermentation>>, StatusCode> {
     // Get user from session
     let user_session: Option<UserSession> = session
@@ -21,7 +29,7 @@ pub async fn list_fermentations(
     let repo = FermentationRepository::new(state.db.clone());
     let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
 
-    match repo.find_all_by_user(user.user_id).await {
+    match repo.find_all_by_user(user.user_id, &query).await {
         Ok(mut fermentations) => {
             // Populate thumbnail_path for each fermentation
             for fermentation in &mut fermentations {
@@ -29,7 +37,10 @@ pub async fn list_fermentations(
                     .get_thumbnail_for_fermentation(fermentation.id, fermentation.status.as_str())
                     .await
                     .unwrap_or_else(|e| {
-                        tracing::error!("Error fetching thumbnail for fermentation {}: {}", fermentation.id, e);
+                        tracing::error!(
+                            "Error fetching thumbnail for fermentation {}: {}",
+                            fermentation.id, e
+                        );
                         None
                     });
             }

@@ -1,9 +1,9 @@
 use askama::Template;
-use axum::extract::{Path, State};
+use axum::extract::{Path, Query, State};
 use axum::response::{Html, Redirect};
 use tower_sessions::Session;
 
-use crate::fermentation::models::Fermentation;
+use crate::fermentation::models::{Fermentation, FermentationListQuery};
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
 use crate::AppState;
@@ -14,11 +14,17 @@ pub struct FermentationListTemplate {
     pub title: String,
     pub user_email: String,
     pub fermentations: Vec<Fermentation>,
+    pub search: String,
+    pub status_filter: String,
+    pub profile_type_filter: String,
+    pub sort_by: String,
+    pub sort_order: String,
 }
 
 pub async fn fermentation_list_handler(
     State(state): State<AppState>,
     session: Session,
+    Query(query): Query<FermentationListQuery>,
 ) -> Result<Html<String>, Redirect> {
     // Get user from session
     let user_session: Option<UserSession> = session.get("user").await.unwrap_or(None);
@@ -28,7 +34,7 @@ pub async fn fermentation_list_handler(
         let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
 
         let mut fermentations = repo
-            .find_all_by_user(user.user_id)
+            .find_all_by_user(user.user_id, &query)
             .await
             .unwrap_or_else(|e| {
                 tracing::error!("Error fetching fermentations: {}", e);
@@ -41,7 +47,10 @@ pub async fn fermentation_list_handler(
                 .get_thumbnail_for_fermentation(fermentation.id, fermentation.status.as_str())
                 .await
                 .unwrap_or_else(|e| {
-                    tracing::error!("Error fetching thumbnail for fermentation {}: {}", fermentation.id, e);
+                    tracing::error!(
+                        "Error fetching thumbnail for fermentation {}: {}",
+                        fermentation.id, e
+                    );
                     None
                 });
         }
@@ -50,6 +59,14 @@ pub async fn fermentation_list_handler(
             title: "My Fermentations - Raugupatis Log".to_string(),
             user_email: user.email,
             fermentations,
+            search: query.search.clone().unwrap_or_default(),
+            status_filter: query.status.clone().unwrap_or_default(),
+            profile_type_filter: query.profile_type.clone().unwrap_or_default(),
+            sort_by: query
+                .sort_by
+                .clone()
+                .unwrap_or_else(|| "created_at".to_string()),
+            sort_order: query.sort_order.clone().unwrap_or_else(|| "desc".to_string()),
         };
 
         Ok(Html(template.render().unwrap_or_else(|e| {
