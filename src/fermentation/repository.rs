@@ -391,7 +391,7 @@ impl FermentationRepository {
     ) -> Result<TemperatureLog, Box<dyn std::error::Error + Send + Sync>> {
         // Verify the fermentation exists and belongs to the user
         if self.find_by_id(fermentation_id, user_id).await?.is_none() {
-            return Err("Fermentation not found or access denied".into());
+            return Err("Fermentation not found".into());
         }
 
         // Parse recorded_at date or use current time
@@ -440,7 +440,7 @@ impl FermentationRepository {
     ) -> Result<Vec<TemperatureLog>, Box<dyn std::error::Error + Send + Sync>> {
         // Verify the fermentation exists and belongs to the user
         if self.find_by_id(fermentation_id, user_id).await?.is_none() {
-            return Err("Fermentation not found or access denied".into());
+            return Err("Fermentation not found".into());
         }
 
         let db = self.db.clone();

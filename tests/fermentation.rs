@@ -2162,6 +2162,125 @@ async fn test_cannot_add_temperature_to_other_users_fermentation() {
         .await
         .unwrap();
 
-    // Should return internal server error (from the repository's access denied error)
-    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+    // Should return not found (fermentation doesn't exist for user2)
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_create_temperature_log_invalid_temperature() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "tempvalidation@example.com",
+        "password": "password123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "tempvalidation@example.com",
+        "password": "password123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Try to add temperature log with negative temperature
+    let temp_log_body = json!({
+        "temperature": -10.0,
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&temp_log_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // Try to add temperature log with temperature above max
+    let temp_log_body = json!({
+        "temperature": 200.0,
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&temp_log_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }

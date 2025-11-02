@@ -612,6 +612,15 @@
                 const temperature = parseFloat(document.getElementById('temperature').value);
                 const notes = document.getElementById('temp_notes').value;
                 
+                // Validate temperature value
+                if (isNaN(temperature) || temperature < 0 || temperature > 150) {
+                    messageDiv.className = 'upload-message error';
+                    messageDiv.textContent = 'Please enter a valid temperature between 0°F and 150°F.';
+                    tempLogButton.disabled = false;
+                    tempLogButton.textContent = 'Add Temperature Reading';
+                    return;
+                }
+                
                 const requestBody = {
                     temperature: temperature,
                     notes: notes || null

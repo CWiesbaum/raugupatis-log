@@ -208,8 +208,11 @@ pub async fn create_temperature_log(
 
     let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Validate temperature value
-    if request.temperature.is_nan() || request.temperature.is_infinite() {
+    // Validate temperature value (reasonable range for fermentation: 0°F to 150°F)
+    if request.temperature.is_nan() 
+        || request.temperature.is_infinite() 
+        || request.temperature < 0.0 
+        || request.temperature > 150.0 {
         return Err(StatusCode::BAD_REQUEST);
     }
 
@@ -227,8 +230,13 @@ pub async fn create_temperature_log(
         .create_temperature_log(fermentation_id, user.user_id, request)
         .await
         .map_err(|e| {
-            tracing::error!("Error creating temperature log: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            let error_msg = e.to_string();
+            tracing::error!("Error creating temperature log: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         })?;
 
     Ok((StatusCode::CREATED, Json(temperature_log)))
@@ -253,8 +261,13 @@ pub async fn list_temperature_logs(
         .find_temperature_logs_by_fermentation(fermentation_id, user.user_id)
         .await
         .map_err(|e| {
-            tracing::error!("Error fetching temperature logs: {}", e);
-            StatusCode::INTERNAL_SERVER_ERROR
+            let error_msg = e.to_string();
+            tracing::error!("Error fetching temperature logs: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
         })?;
 
     Ok(Json(logs))
