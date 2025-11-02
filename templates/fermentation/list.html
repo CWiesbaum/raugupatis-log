@@ -408,12 +408,10 @@
                         <label for="profile_type">Profile Type</label>
                         <select name="profile_type" id="profile_type">
                             <option value="">All Types</option>
-                            <option value="pickles" {% if profile_type_filter == "pickles" %}selected{% endif %}>Pickles</option>
-                            <option value="kombucha" {% if profile_type_filter == "kombucha" %}selected{% endif %}>Kombucha</option>
-                            <option value="kimchi" {% if profile_type_filter == "kimchi" %}selected{% endif %}>Kimchi</option>
-                            <option value="sauerkraut" {% if profile_type_filter == "sauerkraut" %}selected{% endif %}>Sauerkraut</option>
-                            <option value="sourdough" {% if profile_type_filter == "sourdough" %}selected{% endif %}>Sourdough</option>
-                            <option value="kefir" {% if profile_type_filter == "kefir" %}selected{% endif %}>Kefir</option>
+                            <option value="vegetable" {% if profile_type_filter == "vegetable" %}selected{% endif %}>Vegetable</option>
+                            <option value="beverage" {% if profile_type_filter == "beverage" %}selected{% endif %}>Beverage</option>
+                            <option value="grain" {% if profile_type_filter == "grain" %}selected{% endif %}>Grain</option>
+                            <option value="dairy" {% if profile_type_filter == "dairy" %}selected{% endif %}>Dairy</option>
                         </select>
                     </div>
                     <div class="filter-group">
