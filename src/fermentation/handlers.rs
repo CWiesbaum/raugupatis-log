@@ -1,7 +1,10 @@
 use axum::{extract::{Path, State}, http::StatusCode, Json};
 use tower_sessions::Session;
 
-use crate::fermentation::models::{CreateFermentationRequest, Fermentation, FermentationResponse, UpdateFermentationRequest};
+use crate::fermentation::models::{
+    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationResponse,
+    TemperatureLog, UpdateFermentationRequest,
+};
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
 use crate::AppState;
@@ -189,4 +192,70 @@ pub async fn update_fermentation(
         fermentation,
         profile,
     )))
+}
+
+pub async fn create_temperature_log(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+    Json(request): Json<CreateTemperatureLogRequest>,
+) -> Result<(StatusCode, Json<TemperatureLog>), StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate temperature value
+    if request.temperature.is_nan() || request.temperature.is_infinite() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Validate recorded_at format if provided
+    if let Some(ref recorded_at) = request.recorded_at {
+        if chrono::DateTime::parse_from_rfc3339(recorded_at).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    // Create the temperature log
+    let temperature_log = fermentation_repo
+        .create_temperature_log(fermentation_id, user.user_id, request)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error creating temperature log: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok((StatusCode::CREATED, Json(temperature_log)))
+}
+
+pub async fn list_temperature_logs(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+) -> Result<Json<Vec<TemperatureLog>>, StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    let logs = fermentation_repo
+        .find_temperature_logs_by_fermentation(fermentation_id, user.user_id)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error fetching temperature logs: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+
+    Ok(Json(logs))
 }

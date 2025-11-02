@@ -111,6 +111,7 @@ pub struct FermentationDetailTemplate {
     pub title: String,
     pub fermentation: Fermentation,
     pub photos: Vec<crate::photos::FermentationPhoto>,
+    pub temperature_logs: Vec<crate::fermentation::models::TemperatureLog>,
 }
 
 pub async fn fermentation_detail_handler(
@@ -137,10 +138,20 @@ pub async fn fermentation_detail_handler(
                         Vec::new()
                     });
 
+                // Fetch temperature logs for this fermentation
+                let temperature_logs = repo
+                    .find_temperature_logs_by_fermentation(id, user.user_id)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::error!("Error fetching temperature logs: {}", e);
+                        Vec::new()
+                    });
+
                 let template = FermentationDetailTemplate {
                     title: format!("{} - Raugupatis Log", fermentation.name),
                     fermentation,
                     photos,
+                    temperature_logs,
                 };
 
                 Ok(Html(template.render().unwrap_or_else(|e| {
