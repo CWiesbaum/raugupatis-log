@@ -290,7 +290,7 @@
                 <div class="fermentation-card">
                     {% match fermentation.thumbnail_path %}
                     {% when Some with (thumbnail) %}
-                    <img src="{{ thumbnail }}" alt="{{ fermentation.name }} thumbnail" class="card-thumbnail">
+                    <img src="/uploads/{{ thumbnail }}" alt="{{ fermentation.name }} thumbnail" class="card-thumbnail">
                     {% when None %}{% endmatch %}
                     
                     <div class="card-header">
