@@ -230,6 +230,105 @@
             text-decoration: underline;
         }
 
+        /* Search and Filter Styles */
+        .search-filter-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            backdrop-filter: blur(10px);
+        }
+        .search-box {
+            margin-bottom: 1rem;
+        }
+        .search-box input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 1rem;
+        }
+        .search-box input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .search-box input:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .filters-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0.9;
+        }
+        .filter-group select {
+            padding: 0.5rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 0.95rem;
+            cursor: pointer;
+        }
+        .filter-group select:focus {
+            outline: none;
+            border-color: rgba(255, 255, 255, 0.6);
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .filter-group select option {
+            background: #764ba2;
+            color: white;
+        }
+        .filter-actions {
+            display: flex;
+            gap: 0.75rem;
+            justify-content: flex-end;
+        }
+        .btn-filter {
+            padding: 0.5rem 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(76, 175, 80, 0.5);
+            border-color: rgba(76, 175, 80, 0.8);
+            color: white;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-filter:hover {
+            background: rgba(76, 175, 80, 0.7);
+            border-color: rgba(76, 175, 80, 1);
+        }
+        .btn-reset {
+            padding: 0.5rem 1.25rem;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-reset:hover {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+
         /* Mobile responsive styles */
         @media (max-width: 768px) {
             body {
@@ -254,6 +353,16 @@
                 width: 100%;
                 text-align: center;
             }
+            .filters-row {
+                grid-template-columns: 1fr;
+            }
+            .filter-actions {
+                flex-direction: column;
+            }
+            .btn-filter, .btn-reset {
+                width: 100%;
+                text-align: center;
+            }
         }
     </style>
 </head>
@@ -271,6 +380,64 @@
         <div class="nav-actions">
             <a href="/dashboard" class="btn">← Back to Dashboard</a>
             <a href="/fermentation/new" class="btn btn-primary">+ New Fermentation</a>
+        </div>
+
+        <!-- Search and Filter Section -->
+        <div class="search-filter-section">
+            <form method="get" action="/fermentations">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        name="search" 
+                        placeholder="🔍 Search by name, notes, or ingredients..." 
+                        value="{{ search }}"
+                    />
+                </div>
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label for="status">Status</label>
+                        <select name="status" id="status">
+                            <option value="">All Statuses</option>
+                            <option value="active" {% if status_filter == "active" %}selected{% endif %}>Active</option>
+                            <option value="paused" {% if status_filter == "paused" %}selected{% endif %}>Paused</option>
+                            <option value="completed" {% if status_filter == "completed" %}selected{% endif %}>Completed</option>
+                            <option value="failed" {% if status_filter == "failed" %}selected{% endif %}>Failed</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="profile_type">Profile Type</label>
+                        <select name="profile_type" id="profile_type">
+                            <option value="">All Types</option>
+                            <option value="pickles" {% if profile_type_filter == "pickles" %}selected{% endif %}>Pickles</option>
+                            <option value="kombucha" {% if profile_type_filter == "kombucha" %}selected{% endif %}>Kombucha</option>
+                            <option value="kimchi" {% if profile_type_filter == "kimchi" %}selected{% endif %}>Kimchi</option>
+                            <option value="sauerkraut" {% if profile_type_filter == "sauerkraut" %}selected{% endif %}>Sauerkraut</option>
+                            <option value="sourdough" {% if profile_type_filter == "sourdough" %}selected{% endif %}>Sourdough</option>
+                            <option value="kefir" {% if profile_type_filter == "kefir" %}selected{% endif %}>Kefir</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort_by">Sort By</label>
+                        <select name="sort_by" id="sort_by">
+                            <option value="created_at" {% if sort_by == "created_at" %}selected{% endif %}>Date Created</option>
+                            <option value="start_date" {% if sort_by == "start_date" %}selected{% endif %}>Start Date</option>
+                            <option value="name" {% if sort_by == "name" %}selected{% endif %}>Name</option>
+                            <option value="status" {% if sort_by == "status" %}selected{% endif %}>Status</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sort_order">Order</label>
+                        <select name="sort_order" id="sort_order">
+                            <option value="desc" {% if sort_order == "desc" %}selected{% endif %}>Descending</option>
+                            <option value="asc" {% if sort_order == "asc" %}selected{% endif %}>Ascending</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button type="submit" class="btn-filter">Apply Filters</button>
+                    <a href="/fermentations" class="btn-reset">Reset</a>
+                </div>
+            </form>
         </div>
 
         {% if fermentations.is_empty() %}
