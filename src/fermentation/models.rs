@@ -350,7 +350,7 @@ mod tests {
 }
 
 /// Query parameters for filtering and sorting fermentations list
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct FermentationListQuery {
     /// Search term to filter by name, notes, or ingredients
     pub search: Option<String>,
