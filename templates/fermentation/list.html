@@ -123,6 +123,14 @@
             border-color: rgba(255, 255, 255, 0.4);
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
+        .card-thumbnail {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+        }
         .card-header {
             display: flex;
             justify-content: space-between;
@@ -280,6 +288,11 @@
             {% for fermentation in fermentations %}
             <a href="/fermentation/{{ fermentation.id }}" class="fermentation-card-link">
                 <div class="fermentation-card">
+                    {% match fermentation.thumbnail_path %}
+                    {% when Some with (thumbnail) %}
+                    <img src="/uploads/{{ thumbnail }}" alt="{{ fermentation.name }} thumbnail" class="card-thumbnail">
+                    {% when None %}{% endmatch %}
+                    
                     <div class="card-header">
                         <h3 class="card-title">{{ fermentation.name }}</h3>
                         <span class="status-badge status-{{ fermentation.status.as_str() }}">
