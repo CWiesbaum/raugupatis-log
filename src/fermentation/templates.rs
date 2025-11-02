@@ -54,15 +54,32 @@ pub async fn fermentation_list_handler(
 #[template(path = "fermentation/new.html")]
 pub struct NewFermentationTemplate {
     pub title: String,
+    pub temp_unit: String,
 }
 
-pub async fn new_fermentation_handler(session: Session) -> Result<Html<String>, Redirect> {
+pub async fn new_fermentation_handler(
+    State(state): State<AppState>,
+    session: Session,
+) -> Result<Html<String>, Redirect> {
     // Get user from session
     let user_session: Option<UserSession> = session.get("user").await.unwrap_or(None);
 
-    if user_session.is_some() {
+    if let Some(user) = user_session {
+        // Fetch user details to get temperature preference
+        // Default to Fahrenheit if user not found (should never happen in normal flow)
+        let user_repo = crate::users::UserRepository::new(state.db.clone());
+        let temp_unit = user_repo
+            .find_by_id(user.user_id)
+            .await
+            .map(|u| u.preferred_temp_unit.as_str().to_string())
+            .unwrap_or_else(|e| {
+                tracing::warn!("Could not fetch user temperature preference: {}", e);
+                "fahrenheit".to_string()
+            });
+
         let template = NewFermentationTemplate {
             title: "New Fermentation - Raugupatis Log".to_string(),
+            temp_unit,
         };
 
         Ok(Html(

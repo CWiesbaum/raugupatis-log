@@ -11,7 +11,7 @@ use tower_sessions::{Expiry, Session};
 use crate::users::auth::{hash_password, verify_password};
 use crate::users::models::{
     ChangePasswordRequest, CreateUserRequest, ExperienceLevel, LoginRequest, LoginResponse,
-    UpdateProfileRequest, UserResponse, UserSession,
+    TemperatureUnit, UpdateProfileRequest, UserResponse, UserSession,
 };
 use crate::users::repository::UserRepository;
 use crate::AppState;
@@ -228,14 +228,24 @@ pub async fn update_profile(
         ));
     }
 
+    // Validate temperature unit
+    if !TemperatureUnit::is_valid(&request.preferred_temp_unit) {
+        return Err(ApiError::ValidationError(
+            "Invalid temperature unit. Must be 'fahrenheit' or 'celsius'"
+                .to_string(),
+        ));
+    }
+
     let experience_level = ExperienceLevel::from(request.experience_level);
+    let preferred_temp_unit = TemperatureUnit::from(request.preferred_temp_unit);
     let user_repo = UserRepository::new(state.db.clone());
 
-    // Update the user's profile (experience level, first name, and last name)
+    // Update the user's profile (experience level, temperature unit, first name, and last name)
     let updated_user = user_repo
         .update_profile(
             user_session.user_id,
             experience_level,
+            preferred_temp_unit,
             request.first_name,
             request.last_name,
         )
