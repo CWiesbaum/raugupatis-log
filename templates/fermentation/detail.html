@@ -482,6 +482,15 @@
             {% if temperature_logs.is_empty() %}
                 <p style="opacity: 0.8;">No temperature data recorded yet. Add your first temperature reading below!</p>
             {% else %}
+                <!-- Temperature Graph -->
+                <div style="margin-bottom: 2rem;">
+                    <h3 style="font-size: 1.2rem; font-weight: 600; margin-bottom: 1rem;">Temperature Over Time</h3>
+                    <div style="background: rgba(255, 255, 255, 0.95); padding: 1.5rem; border-radius: 10px;">
+                        <canvas id="temperatureChart" style="max-height: 400px;"></canvas>
+                    </div>
+                </div>
+
+                <!-- Temperature Table -->
                 <div style="overflow-x: auto;">
                     <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
                         <thead>
@@ -596,7 +605,109 @@
         </div>
     </div>
 
+    <!-- Chart.js library - using unpkg CDN for better compatibility -->
+    <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
+
     <script>
+        // Temperature Chart
+        {% if !temperature_logs.is_empty() %}
+        (function() {
+            // Prepare data for the chart
+            const fermentationStartDate = new Date('{{ fermentation.start_date.to_rfc3339() }}');
+            
+            // Create chart data with temperature on X-axis and days on Y-axis
+            const chartData = [
+                {% for log in temperature_logs %}
+                {
+                    x: {{ log.temperature }},
+                    y: (new Date('{{ log.recorded_at.to_rfc3339() }}') - fermentationStartDate) / (1000 * 60 * 60 * 24),
+                    label: '{{ log.recorded_at.format("%B %d, %Y at %I:%M %p") }}'
+                }{% if !loop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            // Sort data by days (Y-axis) in ascending order for better visualization
+            chartData.sort((a, b) => a.y - b.y);
+
+            const ctx = document.getElementById('temperatureChart');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'scatter',
+                    data: {
+                        datasets: [{
+                            label: 'Temperature ({{ temp_unit_symbol }})',
+                            data: chartData,
+                            backgroundColor: 'rgba(103, 58, 183, 0.6)',
+                            borderColor: 'rgba(103, 58, 183, 1)',
+                            borderWidth: 2,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            showLine: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        aspectRatio: 2,
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Temperature vs Fermentation Duration',
+                                font: { size: 16, weight: 'bold' },
+                                color: '#333'
+                            },
+                            legend: {
+                                display: true,
+                                position: 'top',
+                                labels: { color: '#333' }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const days = context.parsed.y.toFixed(2);
+                                        const temp = context.parsed.x.toFixed(1);
+                                        return [
+                                            `Day ${days} of fermentation`,
+                                            `Temperature: ${temp}{{ temp_unit_symbol }}`,
+                                            `Recorded: ${context.raw.label}`
+                                        ];
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            x: {
+                                type: 'linear',
+                                position: 'bottom',
+                                title: {
+                                    display: true,
+                                    text: 'Temperature ({{ temp_unit_symbol }})',
+                                    font: { size: 14, weight: 'bold' },
+                                    color: '#333'
+                                },
+                                ticks: { color: '#333' },
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' }
+                            },
+                            y: {
+                                type: 'linear',
+                                title: {
+                                    display: true,
+                                    text: 'Fermentation Duration (days)',
+                                    font: { size: 14, weight: 'bold' },
+                                    color: '#333'
+                                },
+                                ticks: { color: '#333' },
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' },
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        })();
+        {% endif %}
+
         // Temperature log handler
         document.getElementById('tempLogForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();
