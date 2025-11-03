@@ -50,14 +50,14 @@ mod tests {
     fn test_fahrenheit_to_celsius() {
         // Water freezing point
         assert_eq!(fahrenheit_to_celsius(32.0), 0.0);
-        
+
         // Water boiling point
         assert_eq!(fahrenheit_to_celsius(212.0), 100.0);
-        
+
         // Room temperature
         let room_temp_c = fahrenheit_to_celsius(68.0);
         assert!((room_temp_c - 20.0).abs() < 0.1);
-        
+
         // Fermentation temp range
         let ferment_temp_c = fahrenheit_to_celsius(70.0);
         assert!((ferment_temp_c - 21.11).abs() < 0.1);
@@ -67,14 +67,14 @@ mod tests {
     fn test_celsius_to_fahrenheit() {
         // Water freezing point
         assert_eq!(celsius_to_fahrenheit(0.0), 32.0);
-        
+
         // Water boiling point
         assert_eq!(celsius_to_fahrenheit(100.0), 212.0);
-        
+
         // Room temperature
         let room_temp_f = celsius_to_fahrenheit(20.0);
         assert_eq!(room_temp_f, 68.0);
-        
+
         // Fermentation temp range
         let ferment_temp_f = celsius_to_fahrenheit(21.0);
         assert!((ferment_temp_f - 69.8).abs() < 0.1);

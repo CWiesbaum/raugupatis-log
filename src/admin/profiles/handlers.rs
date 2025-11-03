@@ -56,9 +56,7 @@ async fn require_admin(session: &Session) -> Result<UserSession, AdminProfileApi
     let user_session: UserSession = session
         .get("user")
         .await
-        .map_err(|e| {
-            AdminProfileApiError::InternalError(format!("Failed to get session: {}", e))
-        })?
+        .map_err(|e| AdminProfileApiError::InternalError(format!("Failed to get session: {}", e)))?
         .ok_or(AdminProfileApiError::Unauthorized)?;
 
     match user_session.role {
@@ -80,8 +78,10 @@ pub async fn list_all_profiles(
         AdminProfileApiError::DatabaseError(format!("Failed to list profiles: {}", e))
     })?;
 
-    let responses: Vec<AdminProfileResponse> =
-        profiles.into_iter().map(AdminProfileResponse::from).collect();
+    let responses: Vec<AdminProfileResponse> = profiles
+        .into_iter()
+        .map(AdminProfileResponse::from)
+        .collect();
 
     Ok(Json(responses))
 }
@@ -136,14 +136,14 @@ pub async fn create_profile(
     }
 
     // Create profile
-    let profile = repo
-        .create_profile(request)
-        .await
-        .map_err(|e| {
-            AdminProfileApiError::InternalError(format!("Failed to create profile: {}", e))
-        })?;
+    let profile = repo.create_profile(request).await.map_err(|e| {
+        AdminProfileApiError::InternalError(format!("Failed to create profile: {}", e))
+    })?;
 
-    Ok((StatusCode::CREATED, Json(AdminProfileResponse::from(profile))))
+    Ok((
+        StatusCode::CREATED,
+        Json(AdminProfileResponse::from(profile)),
+    ))
 }
 
 /// Copy an existing profile (admin only)
@@ -184,7 +184,10 @@ pub async fn copy_profile(
             }
         })?;
 
-    Ok((StatusCode::CREATED, Json(AdminProfileResponse::from(profile))))
+    Ok((
+        StatusCode::CREATED,
+        Json(AdminProfileResponse::from(profile)),
+    ))
 }
 
 /// Deactivate or reactivate a profile (admin only)

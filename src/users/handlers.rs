@@ -231,8 +231,7 @@ pub async fn update_profile(
     // Validate temperature unit
     if !TemperatureUnit::is_valid(&request.preferred_temp_unit) {
         return Err(ApiError::ValidationError(
-            "Invalid temperature unit. Must be 'fahrenheit' or 'celsius'"
-                .to_string(),
+            "Invalid temperature unit. Must be 'fahrenheit' or 'celsius'".to_string(),
         ));
     }
 
@@ -293,7 +292,9 @@ pub async fn change_password(
             user_repo
                 .update_password(user_session.user_id, new_password_hash)
                 .await
-                .map_err(|e| ApiError::DatabaseError(format!("Failed to update password: {}", e)))?;
+                .map_err(|e| {
+                    ApiError::DatabaseError(format!("Failed to update password: {}", e))
+                })?;
 
             Ok(Json(json!({
                 "success": true,

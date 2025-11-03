@@ -23,7 +23,10 @@ async fn test_upload_photo_unauthorized() {
             Request::builder()
                 .uri("/api/fermentation/1/photos")
                 .method("POST")
-                .header("Content-Type", format!("multipart/form-data; boundary={}", boundary))
+                .header(
+                    "Content-Type",
+                    format!("multipart/form-data; boundary={}", boundary),
+                )
                 .body(Body::from(body_content))
                 .unwrap(),
         )
@@ -118,7 +121,10 @@ async fn test_upload_photo_to_nonexistent_fermentation() {
                 .uri("/api/fermentation/99999/photos")
                 .method("POST")
                 .header("Cookie", cookie_header)
-                .header("Content-Type", format!("multipart/form-data; boundary={}", boundary))
+                .header(
+                    "Content-Type",
+                    format!("multipart/form-data; boundary={}", boundary),
+                )
                 .body(Body::from(body_content))
                 .unwrap(),
         )

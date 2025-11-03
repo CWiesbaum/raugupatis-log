@@ -356,94 +356,97 @@ impl FermentationRepository {
         let notes = request.notes.clone();
         let ingredients_json = request.ingredients.clone();
 
-        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            let conn = db.get_connection().lock().unwrap();
+        tokio::task::spawn_blocking(
+            move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
 
-            // Build dynamic UPDATE query based on provided fields
-            let mut updates = Vec::new();
-            let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+                // Build dynamic UPDATE query based on provided fields
+                let mut updates = Vec::new();
+                let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
 
-            if let Some(n) = name {
-                updates.push("name = ?");
-                params.push(Box::new(n));
-            }
-
-            if let Some(d) = start_date {
-                updates.push("start_date = ?");
-                params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
-            }
-
-            if request.target_end_date.is_some() {
-                if let Some(d) = target_end_date {
-                    updates.push("target_end_date = ?");
-                    params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
-                } else {
-                    updates.push("target_end_date = NULL");
-                }
-            }
-
-            if request.actual_end_date.is_some() {
-                if let Some(d) = actual_end_date {
-                    updates.push("actual_end_date = ?");
-                    params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
-                } else {
-                    updates.push("actual_end_date = NULL");
-                }
-            }
-
-            if let Some(s) = status {
-                updates.push("status = ?");
-                params.push(Box::new(s));
-            }
-
-            if request.success_rating.is_some() {
-                if let Some(r) = success_rating {
-                    updates.push("success_rating = ?");
-                    params.push(Box::new(r));
-                } else {
-                    updates.push("success_rating = NULL");
-                }
-            }
-
-            if request.notes.is_some() {
-                if let Some(n) = notes {
-                    updates.push("notes = ?");
+                if let Some(n) = name {
+                    updates.push("name = ?");
                     params.push(Box::new(n));
-                } else {
-                    updates.push("notes = NULL");
                 }
-            }
 
-            if request.ingredients.is_some() {
-                if let Some(i) = ingredients_json {
-                    updates.push("ingredients_json = ?");
-                    params.push(Box::new(i));
-                } else {
-                    updates.push("ingredients_json = NULL");
+                if let Some(d) = start_date {
+                    updates.push("start_date = ?");
+                    params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
                 }
-            }
 
-            // Always update the updated_at timestamp
-            updates.push("updated_at = CURRENT_TIMESTAMP");
+                if request.target_end_date.is_some() {
+                    if let Some(d) = target_end_date {
+                        updates.push("target_end_date = ?");
+                        params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
+                    } else {
+                        updates.push("target_end_date = NULL");
+                    }
+                }
 
-            if updates.is_empty() {
-                return Ok(());
-            }
+                if request.actual_end_date.is_some() {
+                    if let Some(d) = actual_end_date {
+                        updates.push("actual_end_date = ?");
+                        params.push(Box::new(d.format("%Y-%m-%d %H:%M:%S").to_string()));
+                    } else {
+                        updates.push("actual_end_date = NULL");
+                    }
+                }
 
-            let query = format!(
-                "UPDATE fermentations SET {} WHERE id = ? AND user_id = ?",
-                updates.join(", ")
-            );
+                if let Some(s) = status {
+                    updates.push("status = ?");
+                    params.push(Box::new(s));
+                }
 
-            params.push(Box::new(id));
-            params.push(Box::new(user_id));
+                if request.success_rating.is_some() {
+                    if let Some(r) = success_rating {
+                        updates.push("success_rating = ?");
+                        params.push(Box::new(r));
+                    } else {
+                        updates.push("success_rating = NULL");
+                    }
+                }
 
-            let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+                if request.notes.is_some() {
+                    if let Some(n) = notes {
+                        updates.push("notes = ?");
+                        params.push(Box::new(n));
+                    } else {
+                        updates.push("notes = NULL");
+                    }
+                }
 
-            conn.execute(&query, params_refs.as_slice())?;
+                if request.ingredients.is_some() {
+                    if let Some(i) = ingredients_json {
+                        updates.push("ingredients_json = ?");
+                        params.push(Box::new(i));
+                    } else {
+                        updates.push("ingredients_json = NULL");
+                    }
+                }
 
-            Ok(())
-        })
+                // Always update the updated_at timestamp
+                updates.push("updated_at = CURRENT_TIMESTAMP");
+
+                if updates.is_empty() {
+                    return Ok(());
+                }
+
+                let query = format!(
+                    "UPDATE fermentations SET {} WHERE id = ? AND user_id = ?",
+                    updates.join(", ")
+                );
+
+                params.push(Box::new(id));
+                params.push(Box::new(user_id));
+
+                let params_refs: Vec<&dyn rusqlite::ToSql> =
+                    params.iter().map(|p| p.as_ref()).collect();
+
+                conn.execute(&query, params_refs.as_slice())?;
+
+                Ok(())
+            },
+        )
         .await??;
 
         // Return the updated fermentation
@@ -474,12 +477,13 @@ impl FermentationRepository {
         let temperature = request.temperature;
         let notes = request.notes.clone();
 
-        let log_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
-            let conn = db.get_connection().lock().unwrap();
+        let log_id = tokio::task::spawn_blocking(
+            move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
 
-            let recorded_at_str = recorded_at.format("%Y-%m-%d %H:%M:%S").to_string();
+                let recorded_at_str = recorded_at.format("%Y-%m-%d %H:%M:%S").to_string();
 
-            conn.execute(
+                conn.execute(
                 "INSERT INTO temperature_logs (fermentation_id, recorded_at, temperature, notes)
                  VALUES (?1, ?2, ?3, ?4)",
                 rusqlite::params![
@@ -490,13 +494,15 @@ impl FermentationRepository {
                 ],
             )?;
 
-            let log_id = conn.last_insert_rowid();
-            Ok(log_id)
-        })
+                let log_id = conn.last_insert_rowid();
+                Ok(log_id)
+            },
+        )
         .await??;
 
         // Retrieve the created log
-        self.find_temperature_log_by_id(log_id).await?
+        self.find_temperature_log_by_id(log_id)
+            .await?
             .ok_or_else(|| "Failed to retrieve created temperature log".into())
     }
 

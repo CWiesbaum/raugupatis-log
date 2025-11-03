@@ -39,7 +39,8 @@ pub async fn list_fermentations(
                     .unwrap_or_else(|e| {
                         tracing::error!(
                             "Error fetching thumbnail for fermentation {}: {}",
-                            fermentation.id, e
+                            fermentation.id,
+                            e
                         );
                         None
                     });
@@ -165,7 +166,10 @@ pub async fn update_fermentation(
 
     // Validate status
     if let Some(ref status) = request.status {
-        if !matches!(status.as_str(), "active" | "paused" | "completed" | "failed") {
+        if !matches!(
+            status.as_str(),
+            "active" | "paused" | "completed" | "failed"
+        ) {
             return Err(StatusCode::BAD_REQUEST);
         }
     }
@@ -233,10 +237,11 @@ pub async fn create_temperature_log(
         crate::users::TemperatureUnit::Fahrenheit => (0.0, 150.0),
     };
 
-    if request.temperature.is_nan() 
-        || request.temperature.is_infinite() 
-        || request.temperature < min_temp 
-        || request.temperature > max_temp {
+    if request.temperature.is_nan()
+        || request.temperature.is_infinite()
+        || request.temperature < min_temp
+        || request.temperature > max_temp
+    {
         return Err(StatusCode::BAD_REQUEST);
     }
 

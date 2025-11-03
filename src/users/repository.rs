@@ -174,16 +174,18 @@ impl UserRepository {
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.clone();
 
-        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-            let conn = db.get_connection().lock().unwrap();
+        tokio::task::spawn_blocking(
+            move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
 
-            conn.execute(
+                conn.execute(
                 "UPDATE users SET password_hash = ?1, updated_at = CURRENT_TIMESTAMP WHERE id = ?2",
                 rusqlite::params![&new_password_hash, user_id],
             )?;
 
-            Ok(())
-        })
+                Ok(())
+            },
+        )
         .await?
     }
 }

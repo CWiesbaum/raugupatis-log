@@ -176,7 +176,10 @@ impl AdminProfileRepository {
     }
 
     /// Check if a profile name already exists
-    pub async fn name_exists(&self, name: &str) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
+    pub async fn name_exists(
+        &self,
+        name: &str,
+    ) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
         let db = self.db.clone();
         let name = name.to_string();
 

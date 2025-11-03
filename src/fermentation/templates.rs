@@ -49,7 +49,8 @@ pub async fn fermentation_list_handler(
                 .unwrap_or_else(|e| {
                     tracing::error!(
                         "Error fetching thumbnail for fermentation {}: {}",
-                        fermentation.id, e
+                        fermentation.id,
+                        e
                     );
                     None
                 });
@@ -66,7 +67,10 @@ pub async fn fermentation_list_handler(
                 .sort_by
                 .clone()
                 .unwrap_or_else(|| "created_at".to_string()),
-            sort_order: query.sort_order.clone().unwrap_or_else(|| "desc".to_string()),
+            sort_order: query
+                .sort_order
+                .clone()
+                .unwrap_or_else(|| "desc".to_string()),
         };
 
         Ok(Html(template.render().unwrap_or_else(|e| {
