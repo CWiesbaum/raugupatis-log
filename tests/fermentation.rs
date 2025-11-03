@@ -1568,9 +1568,9 @@ async fn test_fermentation_list_includes_thumbnails() {
     let fermentation_id = fermentation["id"].as_i64().unwrap();
 
     // Add a "start" stage photo
-    use raugupatis_log::photos::{PhotoRepository, PhotoStage};
     use chrono::Utc;
-    
+    use raugupatis_log::photos::{PhotoRepository, PhotoStage};
+
     let photo_repo = PhotoRepository::new(app_state.db.clone());
     let _photo = photo_repo
         .create_photo(
@@ -1844,10 +1844,9 @@ async fn test_fermentation_list_search_by_name() {
 
     // Should only return the two fermentations with "Pickles" in the name
     assert_eq!(fermentations.len(), 2);
-    assert!(fermentations.iter().all(|f| f["name"]
-        .as_str()
-        .unwrap()
-        .contains("Pickles")));
+    assert!(fermentations
+        .iter()
+        .all(|f| f["name"].as_str().unwrap().contains("Pickles")));
 }
 
 #[tokio::test]
@@ -2394,7 +2393,10 @@ async fn test_create_temperature_log_success() {
     let response = app4
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
@@ -2523,7 +2525,11 @@ async fn test_list_temperature_logs_success() {
     let fermentation_id = fermentation["id"].as_i64().unwrap();
 
     // Add multiple temperature logs
-    for (temp, note) in &[(70.0, "First reading"), (72.5, "Second reading"), (75.0, "Third reading")] {
+    for (temp, note) in &[
+        (70.0, "First reading"),
+        (72.5, "Second reading"),
+        (75.0, "Third reading"),
+    ] {
         let temp_log_body = json!({
             "temperature": temp,
             "notes": note
@@ -2533,7 +2539,10 @@ async fn test_list_temperature_logs_success() {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                    .uri(&format!(
+                        "/api/fermentation/{}/temperature",
+                        fermentation_id
+                    ))
                     .method("POST")
                     .header("Content-Type", "application/json")
                     .header("Cookie", cookie_header)
@@ -2551,7 +2560,10 @@ async fn test_list_temperature_logs_success() {
     let response = app4
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .header("Cookie", cookie_header)
                 .body(Body::empty())
                 .unwrap(),
@@ -2568,7 +2580,7 @@ async fn test_list_temperature_logs_success() {
 
     // Should have 3 temperature logs
     assert_eq!(logs.len(), 3);
-    
+
     // Logs should be ordered by recorded_at DESC (newest first)
     assert_eq!(logs[0]["temperature"], 75.0);
     assert_eq!(logs[1]["temperature"], 72.5);
@@ -2656,7 +2668,9 @@ async fn test_cannot_add_temperature_to_other_users_fermentation() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_user1)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -2720,7 +2734,10 @@ async fn test_cannot_add_temperature_to_other_users_fermentation() {
     let response = app6
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_user2)
@@ -2798,7 +2815,9 @@ async fn test_create_temperature_log_invalid_temperature() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -2819,7 +2838,10 @@ async fn test_create_temperature_log_invalid_temperature() {
     let response = app4
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
@@ -2840,7 +2862,10 @@ async fn test_create_temperature_log_invalid_temperature() {
     let response = app5
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
@@ -2917,7 +2942,9 @@ async fn test_create_temperature_log_with_celsius() {
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)
-                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .body(Body::from(
+                    serde_json::to_string(&fermentation_body).unwrap(),
+                ))
                 .unwrap(),
         )
         .await
@@ -2940,7 +2967,10 @@ async fn test_create_temperature_log_with_celsius() {
     let response = app4
         .oneshot(
             Request::builder()
-                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .uri(&format!(
+                    "/api/fermentation/{}/temperature",
+                    fermentation_id
+                ))
                 .method("POST")
                 .header("Content-Type", "application/json")
                 .header("Cookie", cookie_header)

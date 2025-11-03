@@ -110,10 +110,7 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/api/admin/users/:id",
             axum::routing::delete(crate::admin::delete_user),
         )
-        .route(
-            "/api/admin/profiles",
-            get(crate::admin::list_all_profiles),
-        )
+        .route("/api/admin/profiles", get(crate::admin::list_all_profiles))
         .route("/api/admin/profiles", post(crate::admin::create_profile))
         .route(
             "/api/admin/profiles/:id/copy",

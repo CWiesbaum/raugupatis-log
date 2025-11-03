@@ -109,8 +109,7 @@ pub async fn upload_photo(
     let file_path = format!("{}/{}", fermentation_dir, unique_filename);
 
     // Write file to disk
-    let mut file =
-        fs::File::create(&file_path).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut file = fs::File::create(&file_path).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
     file.write_all(&file_data)
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
@@ -162,9 +161,7 @@ pub async fn list_photos(
             StatusCode::INTERNAL_SERVER_ERROR
         })?;
 
-    Ok(Json(
-        photos.into_iter().map(PhotoResponse::from).collect(),
-    ))
+    Ok(Json(photos.into_iter().map(PhotoResponse::from).collect()))
 }
 
 fn sanitize_filename(filename: String) -> String {

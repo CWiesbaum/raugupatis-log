@@ -53,11 +53,7 @@ async fn create_and_login_admin(app_state: &raugupatis_log::AppState) -> String 
         .unwrap();
 
     // Parse cookie to get just the session part
-    cookie_header
-        .split(';')
-        .next()
-        .unwrap()
-        .to_string()
+    cookie_header.split(';').next().unwrap().to_string()
 }
 
 // Helper function to create a regular user and login
@@ -105,11 +101,7 @@ async fn create_and_login_user(app_state: &raugupatis_log::AppState) -> String {
         .to_str()
         .unwrap();
 
-    cookie_header
-        .split(';')
-        .next()
-        .unwrap()
-        .to_string()
+    cookie_header.split(';').next().unwrap().to_string()
 }
 
 #[tokio::test]

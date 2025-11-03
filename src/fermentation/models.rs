@@ -168,9 +168,9 @@ pub struct CreateFermentationRequest {
 #[derive(Debug, Deserialize)]
 pub struct UpdateFermentationRequest {
     pub name: Option<String>,
-    pub start_date: Option<String>,       // ISO 8601 format
-    pub target_end_date: Option<String>,  // ISO 8601 format
-    pub actual_end_date: Option<String>,  // ISO 8601 format
+    pub start_date: Option<String>,      // ISO 8601 format
+    pub target_end_date: Option<String>, // ISO 8601 format
+    pub actual_end_date: Option<String>, // ISO 8601 format
     pub status: Option<String>,
     pub success_rating: Option<i32>,
     pub notes: Option<String>,
@@ -298,8 +298,7 @@ mod tests {
     #[test]
     fn test_is_not_schedule_finished_when_completed() {
         let past_date = Utc::now() - Duration::days(1);
-        let fermentation =
-            create_test_fermentation(Some(past_date), FermentationStatus::Completed);
+        let fermentation = create_test_fermentation(Some(past_date), FermentationStatus::Completed);
         assert!(!fermentation.is_schedule_finished());
     }
 

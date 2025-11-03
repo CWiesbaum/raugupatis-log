@@ -155,7 +155,8 @@ impl PhotoRepository {
 
                 // Determine which stage to prioritize based on fermentation status
                 // Using string literals that match FermentationStatus::as_str() values
-                let (primary_stage, fallback_stage) = if status == "completed" || status == "failed" {
+                let (primary_stage, fallback_stage) = if status == "completed" || status == "failed"
+                {
                     // For finished fermentations, prefer "end" stage, fallback to "start"
                     ("end", Some("start"))
                 } else {

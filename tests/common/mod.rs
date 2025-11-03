@@ -17,7 +17,7 @@ pub async fn create_test_app_state() -> AppState {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    
+
     let test_db_path = temp_dir
         .join(format!("test_raugupatis_{}.db", timestamp))
         .to_string_lossy()
