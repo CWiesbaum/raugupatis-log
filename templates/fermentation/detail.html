@@ -495,7 +495,7 @@
                             {% for log in temperature_logs %}
                             <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
                                 <td style="padding: 0.75rem;">{{ log.recorded_at.format("%B %d, %Y at %I:%M %p") }}</td>
-                                <td style="padding: 0.75rem; font-weight: 600;">{{ log.temperature }}°F</td>
+                                <td style="padding: 0.75rem; font-weight: 600;">{{ log.temperature }}{{ temp_unit_symbol }}</td>
                                 <td style="padding: 0.75rem; opacity: 0.9;">
                                     {% match log.notes %}
                                     {% when Some with (notes) %}
@@ -522,10 +522,11 @@
             <h2 class="section-title">➕ Add Temperature Reading</h2>
             <div class="upload-message" id="tempLogMessage"></div>
             <form id="tempLogForm">
+                <input type="hidden" id="temp_unit" value="{{ temp_unit }}">
                 <div class="form-group">
-                    <label for="temperature">Temperature (°F) *</label>
-                    <input type="number" id="temperature" name="temperature" step="0.1" required placeholder="e.g., 72.5">
-                    <div class="help-text">Enter the current temperature in Fahrenheit</div>
+                    <label for="temperature">Temperature ({{ temp_unit_symbol }}) *</label>
+                    <input type="number" id="temperature" name="temperature" step="0.1" required placeholder="{% if temp_unit == "celsius" %}e.g., 22.5{% else %}e.g., 72.5{% endif %}">
+                    <div class="help-text">Enter the current temperature in {% if temp_unit == "celsius" %}Celsius{% else %}Fahrenheit{% endif %}</div>
                 </div>
                 <div class="form-group">
                     <label for="temp_notes">Notes (optional)</label>
@@ -611,11 +612,23 @@
             try {
                 const temperature = parseFloat(document.getElementById('temperature').value);
                 const notes = document.getElementById('temp_notes').value;
+                const tempUnit = document.getElementById('temp_unit').value;
                 
-                // Validate temperature value
-                if (isNaN(temperature) || temperature < 0 || temperature > 150) {
+                // Validate temperature value based on unit
+                let minTemp, maxTemp, unitSymbol;
+                if (tempUnit === 'celsius') {
+                    minTemp = -18;  // ~0°F in Celsius
+                    maxTemp = 65;   // ~150°F in Celsius
+                    unitSymbol = '°C';
+                } else {
+                    minTemp = 0;
+                    maxTemp = 150;
+                    unitSymbol = '°F';
+                }
+                
+                if (isNaN(temperature) || temperature < minTemp || temperature > maxTemp) {
                     messageDiv.className = 'upload-message error';
-                    messageDiv.textContent = 'Please enter a valid temperature between 0°F and 150°F.';
+                    messageDiv.textContent = `Please enter a valid temperature between ${minTemp}${unitSymbol} and ${maxTemp}${unitSymbol}.`;
                     tempLogButton.disabled = false;
                     tempLogButton.textContent = 'Add Temperature Reading';
                     return;
@@ -623,6 +636,7 @@
                 
                 const requestBody = {
                     temperature: temperature,
+                    temp_unit: tempUnit,
                     notes: notes || null
                 };
                 

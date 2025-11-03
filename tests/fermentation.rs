@@ -2852,3 +2852,112 @@ async fn test_create_temperature_log_invalid_temperature() {
 
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
+
+#[tokio::test]
+async fn test_create_temperature_log_with_celsius() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login a user
+    let register_body = json!({
+        "email": "celsius_user@example.com",
+        "password": "password123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "celsius_user@example.com",
+        "password": "password123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie_header = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Add temperature log in Celsius (20°C should convert to ~68°F)
+    let temp_log_body = json!({
+        "temperature": 20.0,
+        "temp_unit": "celsius",
+        "notes": "Room temperature in Celsius"
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/temperature", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie_header)
+                .body(Body::from(serde_json::to_string(&temp_log_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let temp_log: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    // Verify that the temperature was stored in Fahrenheit (20°C = 68°F)
+    let stored_temp = temp_log["temperature"].as_f64().unwrap();
+    assert!((stored_temp - 68.0).abs() < 0.1);
+}

@@ -206,7 +206,7 @@ pub async fn create_temperature_log(
     session: Session,
     State(state): State<AppState>,
     Path(fermentation_id): Path<i64>,
-    Json(request): Json<CreateTemperatureLogRequest>,
+    Json(mut request): Json<CreateTemperatureLogRequest>,
 ) -> Result<(StatusCode, Json<TemperatureLog>), StatusCode> {
     // Get user from session
     let user_session: Option<UserSession> = session
@@ -216,13 +216,33 @@ pub async fn create_temperature_log(
 
     let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
 
-    // Validate temperature value (reasonable range for fermentation: 0°F to 150°F)
+    // Determine the temperature unit from request or default to Fahrenheit
+    let temp_unit = if let Some(ref unit_str) = request.temp_unit {
+        if unit_str == "celsius" {
+            crate::users::TemperatureUnit::Celsius
+        } else {
+            crate::users::TemperatureUnit::Fahrenheit
+        }
+    } else {
+        crate::users::TemperatureUnit::Fahrenheit
+    };
+
+    // Validate temperature value based on unit
+    let (min_temp, max_temp) = match temp_unit {
+        crate::users::TemperatureUnit::Celsius => (-18.0, 65.0), // Roughly 0°F to 150°F
+        crate::users::TemperatureUnit::Fahrenheit => (0.0, 150.0),
+    };
+
     if request.temperature.is_nan() 
         || request.temperature.is_infinite() 
-        || request.temperature < 0.0 
-        || request.temperature > 150.0 {
+        || request.temperature < min_temp 
+        || request.temperature > max_temp {
         return Err(StatusCode::BAD_REQUEST);
     }
+
+    // Convert temperature to Fahrenheit for storage
+    request.temperature =
+        crate::users::temperature::convert_temp_for_storage(request.temperature, &temp_unit);
 
     // Validate recorded_at format if provided
     if let Some(ref recorded_at) = request.recorded_at {

@@ -390,6 +390,7 @@ pub struct TemperatureLog {
 #[derive(Debug, Deserialize)]
 pub struct CreateTemperatureLogRequest {
     pub temperature: f64,
+    pub temp_unit: Option<String>, // "fahrenheit" or "celsius", defaults to fahrenheit
     pub recorded_at: Option<String>, // ISO 8601 format, optional (defaults to now)
     pub notes: Option<String>,
 }
