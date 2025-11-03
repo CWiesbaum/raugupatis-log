@@ -603,33 +603,18 @@ impl FermentationRepository {
             let now = Utc::now();
             let actual_end_date_str = now.format("%Y-%m-%d %H:%M:%S").to_string();
 
-            let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
-            params.push(Box::new("completed".to_string()));
-            params.push(Box::new(actual_end_date_str));
-
-            if let Some(rating) = success_rating {
-                params.push(Box::new(rating));
-            }
-
-            if let Some(lessons) = lessons_learned {
-                params.push(Box::new(lessons));
-            }
-
-            params.push(Box::new(fermentation_id));
-            params.push(Box::new(user_id));
-
-            let query = if success_rating.is_some() && request.lessons_learned.is_some() {
-                "UPDATE fermentations SET status = ?, actual_end_date = ?, success_rating = ?, lessons_learned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
-            } else if success_rating.is_some() {
-                "UPDATE fermentations SET status = ?, actual_end_date = ?, success_rating = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
-            } else if request.lessons_learned.is_some() {
-                "UPDATE fermentations SET status = ?, actual_end_date = ?, lessons_learned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
-            } else {
-                "UPDATE fermentations SET status = ?, actual_end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
-            };
-
-            let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
-            conn.execute(query, params_refs.as_slice())?;
+            // Use a single UPDATE statement with all fields, passing NULL for optional ones
+            conn.execute(
+                "UPDATE fermentations SET status = ?, actual_end_date = ?, success_rating = ?, lessons_learned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?",
+                rusqlite::params![
+                    "completed",
+                    actual_end_date_str,
+                    success_rating,
+                    lessons_learned,
+                    fermentation_id,
+                    user_id
+                ],
+            )?;
 
             // Add initial taste profile if provided
             if let Some(profile_text) = taste_profile {

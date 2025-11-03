@@ -811,6 +811,18 @@
                 const tasteProfile = document.getElementById('initial_taste_profile').value;
                 const lessonsLearned = document.getElementById('lessons_learned').value;
                 
+                // Validate success rating if provided
+                if (successRating) {
+                    const rating = parseInt(successRating);
+                    if (isNaN(rating) || rating < 1 || rating > 5) {
+                        messageDiv.className = 'upload-message error';
+                        messageDiv.textContent = 'Success rating must be between 1 and 5.';
+                        finishButton.disabled = false;
+                        finishButton.textContent = '✅ Mark as Completed';
+                        return;
+                    }
+                }
+                
                 const requestBody = {
                     success_rating: successRating ? parseInt(successRating) : null,
                     taste_profile: tasteProfile || null,
