@@ -2961,3 +2961,533 @@ async fn test_create_temperature_log_with_celsius() {
     let stored_temp = temp_log["temperature"].as_f64().unwrap();
     assert!((stored_temp - 68.0).abs() < 0.1);
 }
+
+#[tokio::test]
+async fn test_finish_fermentation_success() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "finisher@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "finisher@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create a fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Finish the fermentation
+    let finish_body = json!({
+        "success_rating": 4,
+        "taste_profile": "Crispy and tangy with a nice fermented flavor",
+        "lessons_learned": "Next time, use less salt for a milder taste"
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/finish", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&finish_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let finished_fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    // Verify the fermentation is completed
+    assert_eq!(finished_fermentation["status"], "completed");
+}
+
+#[tokio::test]
+async fn test_finish_fermentation_unauthorized() {
+    let app = common::create_test_app().await;
+
+    let finish_body = json!({
+        "success_rating": 4
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation/1/finish")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&finish_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
+
+#[tokio::test]
+async fn test_finish_fermentation_invalid_rating() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "invalid@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "invalid@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create a fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Try to finish with invalid rating (> 5)
+    let finish_body = json!({
+        "success_rating": 10
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/finish", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&finish_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_add_taste_profile_success() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "taster@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "taster@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create and finish a fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Finish the fermentation first
+    let finish_body = json!({
+        "success_rating": 4
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/finish", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&finish_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Add a taste profile
+    let taste_profile_body = json!({
+        "profile_text": "Tangy and crisp, with a hint of garlic"
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/taste-profiles", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&taste_profile_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let taste_profile: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert_eq!(taste_profile["profile_text"], "Tangy and crisp, with a hint of garlic");
+    assert_eq!(taste_profile["fermentation_id"], fermentation_id);
+}
+
+#[tokio::test]
+async fn test_list_taste_profiles_success() {
+    let app_state = common::create_test_app_state().await;
+
+    // Register and login
+    let register_body = json!({
+        "email": "profilelister@example.com",
+        "password": "securepassword123"
+    });
+
+    let app1 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app1
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/register")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&register_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let login_body = json!({
+        "email": "profilelister@example.com",
+        "password": "securepassword123"
+    });
+
+    let app2 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app2
+        .oneshot(
+            Request::builder()
+                .uri("/api/users/login")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&login_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    let cookie = response
+        .headers()
+        .get("set-cookie")
+        .and_then(|v| v.to_str().ok())
+        .unwrap();
+
+    // Create and finish a fermentation
+    let fermentation_body = json!({
+        "profile_id": 1,
+        "name": "Test Fermentation",
+        "start_date": "2024-01-15T10:00:00Z",
+    });
+
+    let app3 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app3
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&fermentation_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let fermentation: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    let fermentation_id = fermentation["id"].as_i64().unwrap();
+
+    // Finish the fermentation with initial taste profile
+    let finish_body = json!({
+        "success_rating": 4,
+        "taste_profile": "Initial taste: crispy and tangy"
+    });
+
+    let app4 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app4
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/finish", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&finish_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    // Add another taste profile
+    let taste_profile_body = json!({
+        "profile_text": "After a week: more complex flavor with deeper fermentation notes"
+    });
+
+    let app5 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app5
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/taste-profiles", fermentation_id))
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .header("Cookie", cookie)
+                .body(Body::from(serde_json::to_string(&taste_profile_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::CREATED);
+
+    // List taste profiles
+    let app6 = raugupatis_log::create_router(app_state.clone()).await;
+    let response = app6
+        .oneshot(
+            Request::builder()
+                .uri(&format!("/api/fermentation/{}/taste-profiles", fermentation_id))
+                .header("Cookie", cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let profiles: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    // Should have 2 taste profiles
+    assert_eq!(profiles.as_array().unwrap().len(), 2);
+}
+
+#[tokio::test]
+async fn test_taste_profile_unauthorized() {
+    let app = common::create_test_app().await;
+
+    let taste_profile_body = json!({
+        "profile_text": "Test profile"
+    });
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri("/api/fermentation/1/taste-profiles")
+                .method("POST")
+                .header("Content-Type", "application/json")
+                .body(Body::from(serde_json::to_string(&taste_profile_body).unwrap()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
+}
