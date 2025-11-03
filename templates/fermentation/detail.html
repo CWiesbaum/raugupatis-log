@@ -476,6 +476,90 @@
             {% endif %}
         {% when None %}{% endmatch %}
 
+        <!-- Lessons Learned (for completed fermentations) -->
+        {% if fermentation.status.as_str() == "completed" %}
+            {% match fermentation.lessons_learned %}
+            {% when Some with (lessons) %}
+                {% if !lessons.is_empty() %}
+                <div class="detail-section">
+                    <h2 class="section-title">💡 Lessons Learned</h2>
+                    <div class="notes-content">
+                        {{ lessons }}
+                    </div>
+                </div>
+                {% endif %}
+            {% when None %}{% endmatch %}
+        {% endif %}
+
+        <!-- Taste Profiles (for completed fermentations) -->
+        {% if fermentation.status.as_str() == "completed" %}
+            <div class="detail-section">
+                <h2 class="section-title">👅 Taste Profiles</h2>
+                {% if taste_profiles.is_empty() %}
+                    <p style="opacity: 0.8;">No taste profiles recorded yet. Add your first taste profile below!</p>
+                {% else %}
+                    <div style="margin-top: 1rem;">
+                        {% for profile in taste_profiles %}
+                        <div style="background: rgba(0, 0, 0, 0.2); padding: 1rem; border-radius: 10px; margin-bottom: 1rem; border-left: 4px solid rgba(103, 58, 183, 0.8);">
+                            <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 0.5rem;">
+                                {{ profile.tasted_at.format("%B %d, %Y at %I:%M %p") }}
+                            </div>
+                            <div>{{ profile.profile_text }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Add Taste Profile Form (for completed fermentations) -->
+            <div class="detail-section">
+                <h2 class="section-title">➕ Add Taste Profile</h2>
+                <div class="upload-message" id="tasteProfileMessage"></div>
+                <form id="tasteProfileForm">
+                    <div class="form-group">
+                        <label for="taste_profile_text">Taste Profile *</label>
+                        <textarea id="taste_profile_text" name="profile_text" rows="4" required placeholder="Describe the taste, aroma, texture, and any notable characteristics..." style="width: 100%; padding: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                        <div class="help-text">Track how the taste develops over time by adding multiple taste profiles</div>
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="tasteProfileButton">Add Taste Profile</button>
+                </form>
+            </div>
+        {% endif %}
+
+        <!-- Finish Fermentation Form (for active/paused fermentations) -->
+        {% if fermentation.status.as_str() == "active" || fermentation.status.as_str() == "paused" %}
+        <div class="detail-section" style="border: 2px solid rgba(76, 175, 80, 0.6); background: rgba(76, 175, 80, 0.1);">
+            <h2 class="section-title">✅ Finish Fermentation</h2>
+            <div class="upload-message" id="finishFermentationMessage"></div>
+            <form id="finishFermentationForm">
+                <div class="form-group">
+                    <label for="success_rating">Success Rating (1-5)</label>
+                    <select id="success_rating" name="success_rating" style="width: 100%; padding: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; font-family: inherit;">
+                        <option value="">Select a rating...</option>
+                        <option value="1">⭐ 1 - Poor</option>
+                        <option value="2">⭐⭐ 2 - Below Average</option>
+                        <option value="3">⭐⭐⭐ 3 - Average</option>
+                        <option value="4">⭐⭐⭐⭐ 4 - Good</option>
+                        <option value="5">⭐⭐⭐⭐⭐ 5 - Excellent</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="initial_taste_profile">Initial Taste Profile</label>
+                    <textarea id="initial_taste_profile" name="taste_profile" rows="4" placeholder="Describe the taste, aroma, texture, and any notable characteristics..." style="width: 100%; padding: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                    <div class="help-text">Optional: Add an initial taste profile (you can add more later)</div>
+                </div>
+                <div class="form-group">
+                    <label for="lessons_learned">Lessons Learned</label>
+                    <textarea id="lessons_learned" name="lessons_learned" rows="4" placeholder="What did you learn? What would you do differently next time?" style="width: 100%; padding: 0.75rem; border: 2px solid rgba(255, 255, 255, 0.3); border-radius: 10px; background: rgba(255, 255, 255, 0.1); color: white; font-size: 1rem; font-family: inherit; resize: vertical;"></textarea>
+                    <div class="help-text">Optional: Capture insights for future fermentations</div>
+                </div>
+                <button type="submit" class="btn btn-primary" id="finishButton" style="background: rgba(76, 175, 80, 0.3); border-color: rgba(76, 175, 80, 0.6);">
+                    ✅ Mark as Completed
+                </button>
+            </form>
+        </div>
+        {% endif %}
+
         <!-- Temperature Logs -->
         <div class="detail-section">
             <h2 class="section-title">🌡️ Temperature Logs</h2>
@@ -820,6 +904,126 @@
                 messageDiv.textContent = 'Upload failed. Please try again.';
                 uploadButton.disabled = false;
                 uploadButton.textContent = 'Upload Photo';
+            }
+        });
+
+        // Finish Fermentation handler
+        document.getElementById('finishFermentationForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const finishButton = document.getElementById('finishButton');
+            const messageDiv = document.getElementById('finishFermentationMessage');
+            
+            finishButton.disabled = true;
+            finishButton.textContent = 'Finishing...';
+            messageDiv.className = 'upload-message';
+            messageDiv.textContent = '';
+            
+            try {
+                const successRating = document.getElementById('success_rating').value;
+                const tasteProfile = document.getElementById('initial_taste_profile').value;
+                const lessonsLearned = document.getElementById('lessons_learned').value;
+                
+                // Validate success rating if provided
+                if (successRating) {
+                    const rating = parseInt(successRating);
+                    if (isNaN(rating) || rating < 1 || rating > 5) {
+                        messageDiv.className = 'upload-message error';
+                        messageDiv.textContent = 'Success rating must be between 1 and 5.';
+                        finishButton.disabled = false;
+                        finishButton.textContent = '✅ Mark as Completed';
+                        return;
+                    }
+                }
+                
+                const requestBody = {
+                    success_rating: successRating ? parseInt(successRating) : null,
+                    taste_profile: tasteProfile || null,
+                    lessons_learned: lessonsLearned || null
+                };
+                
+                const response = await fetch('/api/fermentation/{{ fermentation.id }}/finish', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to finish fermentation');
+                }
+                
+                messageDiv.className = 'upload-message success';
+                messageDiv.textContent = 'Fermentation marked as completed! Reloading...';
+                
+                // Reload page to show completed status
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error finishing fermentation:', error);
+                messageDiv.className = 'upload-message error';
+                messageDiv.textContent = 'Failed to finish fermentation. Please try again.';
+                finishButton.disabled = false;
+                finishButton.textContent = '✅ Mark as Completed';
+            }
+        });
+
+        // Taste Profile handler
+        document.getElementById('tasteProfileForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tasteProfileButton = document.getElementById('tasteProfileButton');
+            const messageDiv = document.getElementById('tasteProfileMessage');
+            
+            tasteProfileButton.disabled = true;
+            tasteProfileButton.textContent = 'Adding...';
+            messageDiv.className = 'upload-message';
+            messageDiv.textContent = '';
+            
+            try {
+                const profileText = document.getElementById('taste_profile_text').value;
+                
+                if (!profileText.trim()) {
+                    messageDiv.className = 'upload-message error';
+                    messageDiv.textContent = 'Please enter a taste profile.';
+                    tasteProfileButton.disabled = false;
+                    tasteProfileButton.textContent = 'Add Taste Profile';
+                    return;
+                }
+                
+                const requestBody = {
+                    profile_text: profileText
+                };
+                
+                const response = await fetch('/api/fermentation/{{ fermentation.id }}/taste-profiles', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add taste profile');
+                }
+                
+                messageDiv.className = 'upload-message success';
+                messageDiv.textContent = 'Taste profile added successfully! Reloading...';
+                
+                // Reload page to show new taste profile
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error adding taste profile:', error);
+                messageDiv.className = 'upload-message error';
+                messageDiv.textContent = 'Failed to add taste profile. Please try again.';
+                tasteProfileButton.disabled = false;
+                tasteProfileButton.textContent = 'Add Taste Profile';
             }
         });
     </script>

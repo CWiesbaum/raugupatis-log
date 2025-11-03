@@ -6,8 +6,9 @@ use axum::{
 use tower_sessions::Session;
 
 use crate::fermentation::models::{
-    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationListQuery,
-    FermentationResponse, TemperatureLog, UpdateFermentationRequest,
+    CreateFermentationRequest, CreateTasteProfileRequest, CreateTemperatureLogRequest, Fermentation,
+    FermentationListQuery, FermentationResponse, FinishFermentationRequest, TasteProfile,
+    TemperatureLog, UpdateFermentationRequest,
 };
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
@@ -304,4 +305,126 @@ pub async fn list_temperature_logs(
         })?;
 
     Ok(Json(logs))
+}
+
+pub async fn finish_fermentation(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+    Json(request): Json<FinishFermentationRequest>,
+) -> Result<Json<FermentationResponse>, StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate success rating if provided
+    if let Some(rating) = request.success_rating {
+        if !(1..=5).contains(&rating) {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    // Finish the fermentation
+    let fermentation = fermentation_repo
+        .finish_fermentation(fermentation_id, user.user_id, request)
+        .await
+        .map_err(|e| {
+            tracing::error!("Error finishing fermentation: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?
+        .ok_or(StatusCode::NOT_FOUND)?;
+
+    // Get the profile for the response
+    let profile = fermentation_repo
+        .get_profile_by_id(fermentation.profile_id)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?
+        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    Ok(Json(FermentationResponse::from_fermentation_and_profile(
+        fermentation,
+        profile,
+    )))
+}
+
+pub async fn create_taste_profile(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+    Json(request): Json<CreateTasteProfileRequest>,
+) -> Result<(StatusCode, Json<TasteProfile>), StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Validate profile_text
+    if request.profile_text.trim().is_empty() {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Validate tasted_at format if provided
+    if let Some(ref tasted_at) = request.tasted_at {
+        if chrono::DateTime::parse_from_rfc3339(tasted_at).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    // Create the taste profile
+    let taste_profile = fermentation_repo
+        .create_taste_profile(fermentation_id, user.user_id, request)
+        .await
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            tracing::error!("Error creating taste profile: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        })?;
+
+    Ok((StatusCode::CREATED, Json(taste_profile)))
+}
+
+pub async fn list_taste_profiles(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+) -> Result<Json<Vec<TasteProfile>>, StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    let profiles = fermentation_repo
+        .find_taste_profiles_by_fermentation(fermentation_id, user.user_id)
+        .await
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            tracing::error!("Error fetching taste profiles: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        })?;
+
+    Ok(Json(profiles))
 }

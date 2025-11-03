@@ -59,6 +59,7 @@ pub struct Fermentation {
     pub success_rating: Option<i32>,
     pub notes: Option<String>,
     pub ingredients_json: Option<String>,
+    pub lessons_learned: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
     // Joined from profile
@@ -231,6 +232,7 @@ mod tests {
             success_rating: None,
             notes: None,
             ingredients_json: None,
+            lessons_learned: None,
             created_at: now,
             updated_at: now,
             profile_name: Some("Test Profile".to_string()),
@@ -392,4 +394,27 @@ pub struct CreateTemperatureLogRequest {
     pub temp_unit: Option<String>, // "fahrenheit" or "celsius", defaults to fahrenheit
     pub recorded_at: Option<String>, // ISO 8601 format, optional (defaults to now)
     pub notes: Option<String>,
+}
+
+// Taste profile models
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TasteProfile {
+    pub id: i64,
+    pub fermentation_id: i64,
+    pub profile_text: String,
+    pub tasted_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateTasteProfileRequest {
+    pub profile_text: String,
+    pub tasted_at: Option<String>, // ISO 8601 format, optional (defaults to now)
+}
+
+#[derive(Debug, Deserialize)]
+pub struct FinishFermentationRequest {
+    pub success_rating: Option<i32>, // 1-5 rating
+    pub lessons_learned: Option<String>,
+    pub taste_profile: Option<String>, // Initial taste profile
 }
