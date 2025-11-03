@@ -476,6 +476,67 @@
             {% endif %}
         {% when None %}{% endmatch %}
 
+        <!-- Temperature Logs -->
+        <div class="detail-section">
+            <h2 class="section-title">🌡️ Temperature Logs</h2>
+            {% if temperature_logs.is_empty() %}
+                <p style="opacity: 0.8;">No temperature data recorded yet. Add your first temperature reading below!</p>
+            {% else %}
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; margin-top: 1rem;">
+                        <thead>
+                            <tr style="background: rgba(0, 0, 0, 0.2); border-bottom: 2px solid rgba(255, 255, 255, 0.3);">
+                                <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Date & Time</th>
+                                <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Temperature</th>
+                                <th style="padding: 0.75rem; text-align: left; font-weight: 600;">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in temperature_logs %}
+                            <tr style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                                <td style="padding: 0.75rem;">{{ log.recorded_at.format("%B %d, %Y at %I:%M %p") }}</td>
+                                <td style="padding: 0.75rem; font-weight: 600;">{{ log.temperature }}{{ temp_unit_symbol }}</td>
+                                <td style="padding: 0.75rem; opacity: 0.9;">
+                                    {% match log.notes %}
+                                    {% when Some with (notes) %}
+                                        {% if !notes.is_empty() %}
+                                            {{ notes }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    {% when None %}
+                                        -
+                                    {% endmatch %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Temperature Log Form -->
+        {% if fermentation.status.as_str() == "active" || fermentation.status.as_str() == "paused" %}
+        <div class="detail-section">
+            <h2 class="section-title">➕ Add Temperature Reading</h2>
+            <div class="upload-message" id="tempLogMessage"></div>
+            <form id="tempLogForm">
+                <input type="hidden" id="temp_unit" value="{{ temp_unit }}">
+                <div class="form-group">
+                    <label for="temperature">Temperature ({{ temp_unit_symbol }}) *</label>
+                    <input type="number" id="temperature" name="temperature" step="0.1" required placeholder="{% if temp_unit == "celsius" %}e.g., 22.5{% else %}e.g., 72.5{% endif %}">
+                    <div class="help-text">Enter the current temperature in {% if temp_unit == "celsius" %}Celsius{% else %}Fahrenheit{% endif %}</div>
+                </div>
+                <div class="form-group">
+                    <label for="temp_notes">Notes (optional)</label>
+                    <input type="text" id="temp_notes" name="notes" placeholder="Optional notes about this reading...">
+                </div>
+                <button type="submit" class="btn btn-primary" id="tempLogButton">Add Temperature Reading</button>
+            </form>
+        </div>
+        {% endif %}
+
         <!-- Photo Gallery -->
         <div class="detail-section">
             <h2 class="section-title">📷 Photo Gallery</h2>
@@ -536,6 +597,78 @@
     </div>
 
     <script>
+        // Temperature log handler
+        document.getElementById('tempLogForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const tempLogButton = document.getElementById('tempLogButton');
+            const messageDiv = document.getElementById('tempLogMessage');
+            
+            tempLogButton.disabled = true;
+            tempLogButton.textContent = 'Adding...';
+            messageDiv.className = 'upload-message';
+            messageDiv.textContent = '';
+            
+            try {
+                const temperature = parseFloat(document.getElementById('temperature').value);
+                const notes = document.getElementById('temp_notes').value;
+                const tempUnit = document.getElementById('temp_unit').value;
+                
+                // Validate temperature value based on unit
+                let minTemp, maxTemp, unitSymbol;
+                if (tempUnit === 'celsius') {
+                    minTemp = -18;  // ~0°F in Celsius
+                    maxTemp = 65;   // ~150°F in Celsius
+                    unitSymbol = '°C';
+                } else {
+                    minTemp = 0;
+                    maxTemp = 150;
+                    unitSymbol = '°F';
+                }
+                
+                if (isNaN(temperature) || temperature < minTemp || temperature > maxTemp) {
+                    messageDiv.className = 'upload-message error';
+                    messageDiv.textContent = `Please enter a valid temperature between ${minTemp}${unitSymbol} and ${maxTemp}${unitSymbol}.`;
+                    tempLogButton.disabled = false;
+                    tempLogButton.textContent = 'Add Temperature Reading';
+                    return;
+                }
+                
+                const requestBody = {
+                    temperature: temperature,
+                    temp_unit: tempUnit,
+                    notes: notes || null
+                };
+                
+                const response = await fetch('/api/fermentation/{{ fermentation.id }}/temperature', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to add temperature reading');
+                }
+                
+                messageDiv.className = 'upload-message success';
+                messageDiv.textContent = 'Temperature reading added successfully! Reloading...';
+                
+                // Reload page to show new temperature reading
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error adding temperature log:', error);
+                messageDiv.className = 'upload-message error';
+                messageDiv.textContent = 'Failed to add temperature reading. Please try again.';
+                tempLogButton.disabled = false;
+                tempLogButton.textContent = 'Add Temperature Reading';
+            }
+        });
+
         // Photo upload handler
         document.getElementById('photoUploadForm')?.addEventListener('submit', async (e) => {
             e.preventDefault();

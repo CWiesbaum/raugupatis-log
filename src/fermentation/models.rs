@@ -375,3 +375,22 @@ impl Default for FermentationListQuery {
         }
     }
 }
+
+// Temperature logging models
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TemperatureLog {
+    pub id: i64,
+    pub fermentation_id: i64,
+    pub recorded_at: DateTime<Utc>,
+    pub temperature: f64,
+    pub notes: Option<String>,
+    pub created_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct CreateTemperatureLogRequest {
+    pub temperature: f64,
+    pub temp_unit: Option<String>, // "fahrenheit" or "celsius", defaults to fahrenheit
+    pub recorded_at: Option<String>, // ISO 8601 format, optional (defaults to now)
+    pub notes: Option<String>,
+}

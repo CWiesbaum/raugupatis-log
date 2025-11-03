@@ -1,7 +1,7 @@
 use crate::database::Database;
 use crate::fermentation::models::{
-    CreateFermentationRequest, Fermentation, FermentationListQuery, FermentationProfile,
-    FermentationStatus, UpdateFermentationRequest,
+    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationListQuery,
+    FermentationProfile, FermentationStatus, TemperatureLog, UpdateFermentationRequest,
 };
 use chrono::{DateTime, Utc};
 use rusqlite::OptionalExtension;
@@ -448,6 +448,133 @@ impl FermentationRepository {
 
         // Return the updated fermentation
         self.find_by_id(id, user_id).await
+    }
+
+    pub async fn create_temperature_log(
+        &self,
+        fermentation_id: i64,
+        user_id: i64,
+        request: CreateTemperatureLogRequest,
+    ) -> Result<TemperatureLog, Box<dyn std::error::Error + Send + Sync>> {
+        // Verify the fermentation exists and belongs to the user
+        if self.find_by_id(fermentation_id, user_id).await?.is_none() {
+            return Err("Fermentation not found".into());
+        }
+
+        // Parse recorded_at date or use current time
+        let recorded_at = if let Some(ref date_str) = request.recorded_at {
+            DateTime::parse_from_rfc3339(date_str)
+                .map_err(|e| format!("Invalid recorded_at format: {}", e))?
+                .with_timezone(&Utc)
+        } else {
+            Utc::now()
+        };
+
+        let db = self.db.clone();
+        let temperature = request.temperature;
+        let notes = request.notes.clone();
+
+        let log_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+
+            let recorded_at_str = recorded_at.format("%Y-%m-%d %H:%M:%S").to_string();
+
+            conn.execute(
+                "INSERT INTO temperature_logs (fermentation_id, recorded_at, temperature, notes)
+                 VALUES (?1, ?2, ?3, ?4)",
+                rusqlite::params![
+                    fermentation_id,
+                    &recorded_at_str,
+                    temperature,
+                    notes,
+                ],
+            )?;
+
+            let log_id = conn.last_insert_rowid();
+            Ok(log_id)
+        })
+        .await??;
+
+        // Retrieve the created log
+        self.find_temperature_log_by_id(log_id).await?
+            .ok_or_else(|| "Failed to retrieve created temperature log".into())
+    }
+
+    pub async fn find_temperature_logs_by_fermentation(
+        &self,
+        fermentation_id: i64,
+        user_id: i64,
+    ) -> Result<Vec<TemperatureLog>, Box<dyn std::error::Error + Send + Sync>> {
+        // Verify the fermentation exists and belongs to the user
+        if self.find_by_id(fermentation_id, user_id).await?.is_none() {
+            return Err("Fermentation not found".into());
+        }
+
+        let db = self.db.clone();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Vec<TemperatureLog>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                let mut stmt = conn.prepare(
+                    "SELECT id, fermentation_id, recorded_at, temperature, notes, created_at
+                     FROM temperature_logs
+                     WHERE fermentation_id = ?1
+                     ORDER BY recorded_at DESC",
+                )?;
+
+                let logs = stmt
+                    .query_map([fermentation_id], |row| {
+                        Ok(TemperatureLog {
+                            id: row.get(0)?,
+                            fermentation_id: row.get(1)?,
+                            recorded_at: parse_datetime(row.get::<_, String>(2)?),
+                            temperature: row.get(3)?,
+                            notes: row.get(4)?,
+                            created_at: parse_datetime(row.get::<_, String>(5)?),
+                        })
+                    })?
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                Ok(logs)
+            },
+        )
+        .await?
+    }
+
+    async fn find_temperature_log_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<TemperatureLog>, Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Option<TemperatureLog>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                let mut stmt = conn.prepare(
+                    "SELECT id, fermentation_id, recorded_at, temperature, notes, created_at
+                     FROM temperature_logs
+                     WHERE id = ?1",
+                )?;
+
+                let log = stmt
+                    .query_row([id], |row| {
+                        Ok(TemperatureLog {
+                            id: row.get(0)?,
+                            fermentation_id: row.get(1)?,
+                            recorded_at: parse_datetime(row.get::<_, String>(2)?),
+                            temperature: row.get(3)?,
+                            notes: row.get(4)?,
+                            created_at: parse_datetime(row.get::<_, String>(5)?),
+                        })
+                    })
+                    .optional()?;
+
+                Ok(log)
+            },
+        )
+        .await?
     }
 }
 

@@ -6,8 +6,8 @@ use axum::{
 use tower_sessions::Session;
 
 use crate::fermentation::models::{
-    CreateFermentationRequest, Fermentation, FermentationListQuery, FermentationResponse,
-    UpdateFermentationRequest,
+    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationListQuery,
+    FermentationResponse, TemperatureLog, UpdateFermentationRequest,
 };
 use crate::fermentation::repository::FermentationRepository;
 use crate::users::UserSession;
@@ -200,4 +200,103 @@ pub async fn update_fermentation(
         fermentation,
         profile,
     )))
+}
+
+pub async fn create_temperature_log(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+    Json(mut request): Json<CreateTemperatureLogRequest>,
+) -> Result<(StatusCode, Json<TemperatureLog>), StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    // Determine the temperature unit from request or default to Fahrenheit
+    let temp_unit = if let Some(ref unit_str) = request.temp_unit {
+        if unit_str == "celsius" {
+            crate::users::TemperatureUnit::Celsius
+        } else {
+            crate::users::TemperatureUnit::Fahrenheit
+        }
+    } else {
+        crate::users::TemperatureUnit::Fahrenheit
+    };
+
+    // Validate temperature value based on unit
+    let (min_temp, max_temp) = match temp_unit {
+        crate::users::TemperatureUnit::Celsius => (-18.0, 65.0), // Roughly 0°F to 150°F
+        crate::users::TemperatureUnit::Fahrenheit => (0.0, 150.0),
+    };
+
+    if request.temperature.is_nan() 
+        || request.temperature.is_infinite() 
+        || request.temperature < min_temp 
+        || request.temperature > max_temp {
+        return Err(StatusCode::BAD_REQUEST);
+    }
+
+    // Convert temperature to Fahrenheit for storage
+    request.temperature =
+        crate::users::temperature::convert_temp_for_storage(request.temperature, &temp_unit);
+
+    // Validate recorded_at format if provided
+    if let Some(ref recorded_at) = request.recorded_at {
+        if chrono::DateTime::parse_from_rfc3339(recorded_at).is_err() {
+            return Err(StatusCode::BAD_REQUEST);
+        }
+    }
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    // Create the temperature log
+    let temperature_log = fermentation_repo
+        .create_temperature_log(fermentation_id, user.user_id, request)
+        .await
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            tracing::error!("Error creating temperature log: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        })?;
+
+    Ok((StatusCode::CREATED, Json(temperature_log)))
+}
+
+pub async fn list_temperature_logs(
+    session: Session,
+    State(state): State<AppState>,
+    Path(fermentation_id): Path<i64>,
+) -> Result<Json<Vec<TemperatureLog>>, StatusCode> {
+    // Get user from session
+    let user_session: Option<UserSession> = session
+        .get("user")
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+
+    let user = user_session.ok_or(StatusCode::UNAUTHORIZED)?;
+
+    let fermentation_repo = FermentationRepository::new(state.db.clone());
+
+    let logs = fermentation_repo
+        .find_temperature_logs_by_fermentation(fermentation_id, user.user_id)
+        .await
+        .map_err(|e| {
+            let error_msg = e.to_string();
+            tracing::error!("Error fetching temperature logs: {}", error_msg);
+            if error_msg.contains("not found") {
+                StatusCode::NOT_FOUND
+            } else {
+                StatusCode::INTERNAL_SERVER_ERROR
+            }
+        })?;
+
+    Ok(Json(logs))
 }

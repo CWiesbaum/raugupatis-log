@@ -128,6 +128,9 @@ pub struct FermentationDetailTemplate {
     pub title: String,
     pub fermentation: Fermentation,
     pub photos: Vec<crate::photos::FermentationPhoto>,
+    pub temperature_logs: Vec<crate::fermentation::models::TemperatureLog>,
+    pub temp_unit: String,
+    pub temp_unit_symbol: String,
 }
 
 pub async fn fermentation_detail_handler(
@@ -141,6 +144,29 @@ pub async fn fermentation_detail_handler(
     if let Some(user) = user_session {
         let repo = FermentationRepository::new(state.db.clone());
         let photo_repo = crate::photos::PhotoRepository::new(state.db.clone());
+        let user_repo = crate::users::UserRepository::new(state.db.clone());
+
+        // Fetch user details to get temperature preference
+        let user_details = user_repo
+            .find_by_id(user.user_id)
+            .await
+            .unwrap_or_else(|e| {
+                tracing::warn!("Could not fetch user temperature preference: {}", e);
+                // Default to Fahrenheit if we can't fetch user details
+                crate::users::User {
+                    id: user.user_id,
+                    email: user.email.clone(),
+                    password_hash: String::new(),
+                    role: user.role.clone(),
+                    experience_level: crate::users::ExperienceLevel::Beginner,
+                    preferred_temp_unit: crate::users::TemperatureUnit::Fahrenheit,
+                    first_name: None,
+                    last_name: None,
+                    is_locked: false,
+                    created_at: chrono::Utc::now(),
+                    updated_at: chrono::Utc::now(),
+                }
+            });
 
         // Fetch the fermentation by ID, ensuring it belongs to the current user
         match repo.find_by_id(id, user.user_id).await {
@@ -154,10 +180,35 @@ pub async fn fermentation_detail_handler(
                         Vec::new()
                     });
 
+                // Fetch temperature logs for this fermentation
+                let mut temperature_logs = repo
+                    .find_temperature_logs_by_fermentation(id, user.user_id)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::error!("Error fetching temperature logs: {}", e);
+                        Vec::new()
+                    });
+
+                // Convert temperatures to user's preferred unit for display
+                // and round to 1 decimal place
+                for log in &mut temperature_logs {
+                    log.temperature = crate::users::temperature::convert_temp_for_display(
+                        log.temperature,
+                        &user_details.preferred_temp_unit,
+                    );
+                    log.temperature = (log.temperature * 10.0).round() / 10.0;
+                }
+
+                let temp_unit_symbol =
+                    crate::users::temperature::get_unit_symbol(&user_details.preferred_temp_unit);
+
                 let template = FermentationDetailTemplate {
                     title: format!("{} - Raugupatis Log", fermentation.name),
                     fermentation,
                     photos,
+                    temperature_logs,
+                    temp_unit: user_details.preferred_temp_unit.as_str().to_string(),
+                    temp_unit_symbol: temp_unit_symbol.to_string(),
                 };
 
                 Ok(Html(template.render().unwrap_or_else(|e| {
