@@ -139,6 +139,18 @@ pub async fn create_router(app_state: AppState) -> Router {
             "/api/fermentation/:id/temperature",
             get(crate::fermentation::list_temperature_logs),
         )
+        .route(
+            "/api/fermentation/:id/finish",
+            post(crate::fermentation::finish_fermentation),
+        )
+        .route(
+            "/api/fermentation/:id/taste-profiles",
+            post(crate::fermentation::create_taste_profile),
+        )
+        .route(
+            "/api/fermentation/:id/taste-profiles",
+            get(crate::fermentation::list_taste_profiles),
+        )
         .nest_service("/uploads", ServeDir::new(&uploads_dir))
         .with_state(app_state)
         .layer(

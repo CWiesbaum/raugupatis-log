@@ -129,6 +129,7 @@ pub struct FermentationDetailTemplate {
     pub fermentation: Fermentation,
     pub photos: Vec<crate::photos::FermentationPhoto>,
     pub temperature_logs: Vec<crate::fermentation::models::TemperatureLog>,
+    pub taste_profiles: Vec<crate::fermentation::models::TasteProfile>,
     pub temp_unit: String,
     pub temp_unit_symbol: String,
 }
@@ -199,6 +200,15 @@ pub async fn fermentation_detail_handler(
                     log.temperature = (log.temperature * 10.0).round() / 10.0;
                 }
 
+                // Fetch taste profiles for this fermentation
+                let taste_profiles = repo
+                    .find_taste_profiles_by_fermentation(id, user.user_id)
+                    .await
+                    .unwrap_or_else(|e| {
+                        tracing::error!("Error fetching taste profiles: {}", e);
+                        Vec::new()
+                    });
+
                 let temp_unit_symbol =
                     crate::users::temperature::get_unit_symbol(&user_details.preferred_temp_unit);
 
@@ -207,6 +217,7 @@ pub async fn fermentation_detail_handler(
                     fermentation,
                     photos,
                     temperature_logs,
+                    taste_profiles,
                     temp_unit: user_details.preferred_temp_unit.as_str().to_string(),
                     temp_unit_symbol: temp_unit_symbol.to_string(),
                 };

@@ -43,6 +43,7 @@ impl Database {
         let migration_sql_004 = include_str!("../migrations/004_add_user_locked_field.sql");
         let migration_sql_005 = include_str!("../migrations/005_add_profile_active_field.sql");
         let migration_sql_006 = include_str!("../migrations/006_add_preferred_temp_unit.sql");
+        let migration_sql_007 = include_str!("../migrations/007_add_taste_profiles_and_lessons.sql");
 
         let migrations = Migrations::new(vec![
             M::up(migration_sql_001),
@@ -51,6 +52,7 @@ impl Database {
             M::up(migration_sql_004),
             M::up(migration_sql_005),
             M::up(migration_sql_006),
+            M::up(migration_sql_007),
         ]);
 
         // Apply migrations - need to move the migrations into the closure

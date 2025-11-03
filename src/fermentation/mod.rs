@@ -5,12 +5,14 @@ pub mod templates;
 
 // Re-export commonly used items for convenience
 pub use handlers::{
-    create_fermentation, create_temperature_log, get_profiles, list_fermentations,
-    list_temperature_logs, update_fermentation,
+    create_fermentation, create_taste_profile, create_temperature_log, finish_fermentation,
+    get_profiles, list_fermentations, list_taste_profiles, list_temperature_logs,
+    update_fermentation,
 };
 pub use models::{
-    CreateFermentationRequest, CreateTemperatureLogRequest, Fermentation, FermentationProfile,
-    FermentationResponse, FermentationStatus, TemperatureLog, UpdateFermentationRequest,
+    CreateFermentationRequest, CreateTasteProfileRequest, CreateTemperatureLogRequest,
+    Fermentation, FermentationProfile, FermentationResponse, FermentationStatus,
+    FinishFermentationRequest, TasteProfile, TemperatureLog, UpdateFermentationRequest,
 };
 pub use repository::FermentationRepository;
 pub use templates::{

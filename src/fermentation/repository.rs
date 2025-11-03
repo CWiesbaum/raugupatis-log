@@ -148,7 +148,7 @@ impl FermentationRepository {
                 let query = format!(
                     "SELECT f.id, f.user_id, f.profile_id, f.name, f.start_date, f.target_end_date,
                         f.actual_end_date, f.status, f.success_rating, f.notes, f.ingredients_json,
-                        f.created_at, f.updated_at, p.name as profile_name, p.type as profile_type
+                        f.lessons_learned, f.created_at, f.updated_at, p.name as profile_name, p.type as profile_type
                      FROM fermentations f
                      LEFT JOIN fermentation_profiles p ON f.profile_id = p.id
                      WHERE {}
@@ -176,10 +176,11 @@ impl FermentationRepository {
                             success_rating: row.get(8)?,
                             notes: row.get(9)?,
                             ingredients_json: row.get(10)?,
-                            created_at: parse_datetime(row.get::<_, String>(11)?),
-                            updated_at: parse_datetime(row.get::<_, String>(12)?),
-                            profile_name: row.get(13)?,
-                            profile_type: row.get(14)?,
+                            lessons_learned: row.get(11)?,
+                            created_at: parse_datetime(row.get::<_, String>(12)?),
+                            updated_at: parse_datetime(row.get::<_, String>(13)?),
+                            profile_name: row.get(14)?,
+                            profile_type: row.get(15)?,
                             thumbnail_path: None,
                         })
                     })?
@@ -205,7 +206,7 @@ impl FermentationRepository {
                 let mut stmt = conn.prepare(
                     "SELECT f.id, f.user_id, f.profile_id, f.name, f.start_date, f.target_end_date,
                         f.actual_end_date, f.status, f.success_rating, f.notes, f.ingredients_json,
-                        f.created_at, f.updated_at, p.name as profile_name, p.type as profile_type
+                        f.lessons_learned, f.created_at, f.updated_at, p.name as profile_name, p.type as profile_type
                  FROM fermentations f
                  LEFT JOIN fermentation_profiles p ON f.profile_id = p.id
                  WHERE f.id = ?1 AND f.user_id = ?2",
@@ -225,10 +226,11 @@ impl FermentationRepository {
                             success_rating: row.get(8)?,
                             notes: row.get(9)?,
                             ingredients_json: row.get(10)?,
-                            created_at: parse_datetime(row.get::<_, String>(11)?),
-                            updated_at: parse_datetime(row.get::<_, String>(12)?),
-                            profile_name: row.get(13)?,
-                            profile_type: row.get(14)?,
+                            lessons_learned: row.get(11)?,
+                            created_at: parse_datetime(row.get::<_, String>(12)?),
+                            updated_at: parse_datetime(row.get::<_, String>(13)?),
+                            profile_name: row.get(14)?,
+                            profile_type: row.get(15)?,
                             thumbnail_path: None,
                         })
                     })
@@ -572,6 +574,197 @@ impl FermentationRepository {
                     .optional()?;
 
                 Ok(log)
+            },
+        )
+        .await?
+    }
+
+    pub async fn finish_fermentation(
+        &self,
+        fermentation_id: i64,
+        user_id: i64,
+        request: crate::fermentation::models::FinishFermentationRequest,
+    ) -> Result<Option<Fermentation>, Box<dyn std::error::Error + Send + Sync>> {
+        // Verify the fermentation exists and belongs to the user
+        let fermentation = self.find_by_id(fermentation_id, user_id).await?;
+        if fermentation.is_none() {
+            return Ok(None);
+        }
+
+        let db = self.db.clone();
+        let success_rating = request.success_rating;
+        let lessons_learned = request.lessons_learned.clone();
+        let taste_profile = request.taste_profile.clone();
+
+        tokio::task::spawn_blocking(move || -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+
+            // Update fermentation to completed status
+            let now = Utc::now();
+            let actual_end_date_str = now.format("%Y-%m-%d %H:%M:%S").to_string();
+
+            let mut params: Vec<Box<dyn rusqlite::ToSql>> = Vec::new();
+            params.push(Box::new("completed".to_string()));
+            params.push(Box::new(actual_end_date_str));
+
+            if let Some(rating) = success_rating {
+                params.push(Box::new(rating));
+            }
+
+            if let Some(lessons) = lessons_learned {
+                params.push(Box::new(lessons));
+            }
+
+            params.push(Box::new(fermentation_id));
+            params.push(Box::new(user_id));
+
+            let query = if success_rating.is_some() && request.lessons_learned.is_some() {
+                "UPDATE fermentations SET status = ?, actual_end_date = ?, success_rating = ?, lessons_learned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+            } else if success_rating.is_some() {
+                "UPDATE fermentations SET status = ?, actual_end_date = ?, success_rating = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+            } else if request.lessons_learned.is_some() {
+                "UPDATE fermentations SET status = ?, actual_end_date = ?, lessons_learned = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+            } else {
+                "UPDATE fermentations SET status = ?, actual_end_date = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?"
+            };
+
+            let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
+            conn.execute(query, params_refs.as_slice())?;
+
+            // Add initial taste profile if provided
+            if let Some(profile_text) = taste_profile {
+                if !profile_text.trim().is_empty() {
+                    let tasted_at_str = now.format("%Y-%m-%d %H:%M:%S").to_string();
+                    conn.execute(
+                        "INSERT INTO taste_profiles (fermentation_id, profile_text, tasted_at)
+                         VALUES (?1, ?2, ?3)",
+                        rusqlite::params![fermentation_id, profile_text, tasted_at_str],
+                    )?;
+                }
+            }
+
+            Ok(())
+        })
+        .await??;
+
+        // Return the updated fermentation
+        self.find_by_id(fermentation_id, user_id).await
+    }
+
+    pub async fn create_taste_profile(
+        &self,
+        fermentation_id: i64,
+        user_id: i64,
+        request: crate::fermentation::models::CreateTasteProfileRequest,
+    ) -> Result<crate::fermentation::models::TasteProfile, Box<dyn std::error::Error + Send + Sync>> {
+        // Verify the fermentation exists and belongs to the user
+        if self.find_by_id(fermentation_id, user_id).await?.is_none() {
+            return Err("Fermentation not found".into());
+        }
+
+        // Parse tasted_at date or use current time
+        let tasted_at = if let Some(ref date_str) = request.tasted_at {
+            DateTime::parse_from_rfc3339(date_str)
+                .map_err(|e| format!("Invalid tasted_at format: {}", e))?
+                .with_timezone(&Utc)
+        } else {
+            Utc::now()
+        };
+
+        let db = self.db.clone();
+        let profile_text = request.profile_text.clone();
+
+        let profile_id = tokio::task::spawn_blocking(move || -> Result<i64, Box<dyn std::error::Error + Send + Sync>> {
+            let conn = db.get_connection().lock().unwrap();
+
+            let tasted_at_str = tasted_at.format("%Y-%m-%d %H:%M:%S").to_string();
+
+            conn.execute(
+                "INSERT INTO taste_profiles (fermentation_id, profile_text, tasted_at)
+                 VALUES (?1, ?2, ?3)",
+                rusqlite::params![fermentation_id, profile_text, tasted_at_str],
+            )?;
+
+            let profile_id = conn.last_insert_rowid();
+            Ok(profile_id)
+        })
+        .await??;
+
+        // Retrieve the created taste profile
+        self.find_taste_profile_by_id(profile_id).await?
+            .ok_or_else(|| "Failed to retrieve created taste profile".into())
+    }
+
+    pub async fn find_taste_profiles_by_fermentation(
+        &self,
+        fermentation_id: i64,
+        user_id: i64,
+    ) -> Result<Vec<crate::fermentation::models::TasteProfile>, Box<dyn std::error::Error + Send + Sync>> {
+        // Verify the fermentation exists and belongs to the user
+        if self.find_by_id(fermentation_id, user_id).await?.is_none() {
+            return Err("Fermentation not found".into());
+        }
+
+        let db = self.db.clone();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Vec<crate::fermentation::models::TasteProfile>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                let mut stmt = conn.prepare(
+                    "SELECT id, fermentation_id, profile_text, tasted_at, created_at
+                     FROM taste_profiles
+                     WHERE fermentation_id = ?1
+                     ORDER BY tasted_at DESC",
+                )?;
+
+                let profiles = stmt
+                    .query_map([fermentation_id], |row| {
+                        Ok(crate::fermentation::models::TasteProfile {
+                            id: row.get(0)?,
+                            fermentation_id: row.get(1)?,
+                            profile_text: row.get(2)?,
+                            tasted_at: parse_datetime(row.get::<_, String>(3)?),
+                            created_at: parse_datetime(row.get::<_, String>(4)?),
+                        })
+                    })?
+                    .collect::<Result<Vec<_>, _>>()?;
+
+                Ok(profiles)
+            },
+        )
+        .await?
+    }
+
+    async fn find_taste_profile_by_id(
+        &self,
+        id: i64,
+    ) -> Result<Option<crate::fermentation::models::TasteProfile>, Box<dyn std::error::Error + Send + Sync>> {
+        let db = self.db.clone();
+
+        tokio::task::spawn_blocking(
+            move || -> Result<Option<crate::fermentation::models::TasteProfile>, Box<dyn std::error::Error + Send + Sync>> {
+                let conn = db.get_connection().lock().unwrap();
+
+                let mut stmt = conn.prepare(
+                    "SELECT id, fermentation_id, profile_text, tasted_at, created_at
+                     FROM taste_profiles
+                     WHERE id = ?1",
+                )?;
+
+                let profile = stmt
+                    .query_row([id], |row| {
+                        Ok(crate::fermentation::models::TasteProfile {
+                            id: row.get(0)?,
+                            fermentation_id: row.get(1)?,
+                            profile_text: row.get(2)?,
+                            tasted_at: parse_datetime(row.get::<_, String>(3)?),
+                            created_at: parse_datetime(row.get::<_, String>(4)?),
+                        })
+                    })
+                    .optional()?;
+
+                Ok(profile)
             },
         )
         .await?
