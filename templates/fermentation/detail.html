@@ -605,34 +605,32 @@
         </div>
     </div>
 
-    <!-- Chart.js library - using unpkg CDN for better compatibility -->
+    <!-- Chart.js library with time scale support - using unpkg CDN for better compatibility -->
     <script src="https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js"></script>
+    <script src="https://unpkg.com/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
     <script>
         // Temperature Chart
         {% if !temperature_logs.is_empty() %}
         (function() {
-            // Prepare data for the chart
-            const fermentationStartDate = new Date('{{ fermentation.start_date.to_rfc3339() }}');
-            
-            // Create chart data with temperature on X-axis and days on Y-axis
+            // Create chart data with date/time on X-axis and temperature on Y-axis
             const chartData = [
                 {% for log in temperature_logs %}
                 {
-                    x: {{ log.temperature }},
-                    y: (new Date('{{ log.recorded_at.to_rfc3339() }}') - fermentationStartDate) / (1000 * 60 * 60 * 24),
+                    x: '{{ log.recorded_at.to_rfc3339() }}',
+                    y: {{ log.temperature }},
                     label: '{{ log.recorded_at.format("%B %d, %Y at %I:%M %p") }}'
                 }{% if !loop.last %},{% endif %}
                 {% endfor %}
             ];
 
-            // Sort data by days (Y-axis) in ascending order for better visualization
-            chartData.sort((a, b) => a.y - b.y);
+            // Sort data by time (X-axis) in ascending order for proper line visualization
+            chartData.sort((a, b) => new Date(a.x) - new Date(b.x));
 
             const ctx = document.getElementById('temperatureChart');
             if (ctx) {
                 new Chart(ctx, {
-                    type: 'scatter',
+                    type: 'line',
                     data: {
                         datasets: [{
                             label: 'Temperature ({{ temp_unit_symbol }})',
@@ -642,7 +640,6 @@
                             borderWidth: 2,
                             pointRadius: 6,
                             pointHoverRadius: 8,
-                            showLine: true,
                             tension: 0.4
                         }]
                     },
@@ -653,7 +650,7 @@
                         plugins: {
                             title: {
                                 display: true,
-                                text: 'Temperature vs Fermentation Duration',
+                                text: 'Temperature Over Time',
                                 font: { size: 16, weight: 'bold' },
                                 color: '#333'
                             },
@@ -665,10 +662,8 @@
                             tooltip: {
                                 callbacks: {
                                     label: function(context) {
-                                        const days = context.parsed.y.toFixed(2);
-                                        const temp = context.parsed.x.toFixed(1);
+                                        const temp = context.parsed.y.toFixed(1);
                                         return [
-                                            `Day ${days} of fermentation`,
                                             `Temperature: ${temp}{{ temp_unit_symbol }}`,
                                             `Recorded: ${context.raw.label}`
                                         ];
@@ -678,11 +673,19 @@
                         },
                         scales: {
                             x: {
-                                type: 'linear',
-                                position: 'bottom',
+                                type: 'time',
+                                time: {
+                                    tooltipFormat: 'MMM d, yyyy h:mm a',
+                                    displayFormats: {
+                                        hour: 'MMM d, h:mm a',
+                                        day: 'MMM d',
+                                        week: 'MMM d',
+                                        month: 'MMM yyyy'
+                                    }
+                                },
                                 title: {
                                     display: true,
-                                    text: 'Temperature ({{ temp_unit_symbol }})',
+                                    text: 'Date & Time',
                                     font: { size: 14, weight: 'bold' },
                                     color: '#333'
                                 },
@@ -693,13 +696,12 @@
                                 type: 'linear',
                                 title: {
                                     display: true,
-                                    text: 'Fermentation Duration (days)',
+                                    text: 'Temperature ({{ temp_unit_symbol }})',
                                     font: { size: 14, weight: 'bold' },
                                     color: '#333'
                                 },
                                 ticks: { color: '#333' },
-                                grid: { color: 'rgba(0, 0, 0, 0.1)' },
-                                beginAtZero: true
+                                grid: { color: 'rgba(0, 0, 0, 0.1)' }
                             }
                         }
                     }
