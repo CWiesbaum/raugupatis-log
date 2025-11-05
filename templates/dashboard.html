@@ -196,7 +196,7 @@
                     {% endmatch %}
             {% endmatch %}
             <div class="info-item"><strong>Email:</strong> {{ user.email }}</div>
-            <div class="info-item"><strong>Role:</strong> {{ user.role }}</div>
+            <div class="info-item"><strong>Role:</strong> {{ user.role.display_name() }}</div>
             <div class="info-item"><strong>Experience Level:</strong> {{ user.experience_level }}</div>
         </div>
         
