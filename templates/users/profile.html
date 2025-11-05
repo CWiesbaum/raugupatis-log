@@ -179,7 +179,7 @@
         
         <div class="user-info">
             <div class="info-item"><strong>Email:</strong> {{ user.email }}</div>
-            <div class="info-item"><strong>Role:</strong> {{ user.role }}</div>
+            <div class="info-item"><strong>Role:</strong> {{ user.role.display_name() }}</div>
             <div class="info-item"><strong>Member Since:</strong> <span id="memberSince"></span></div>
         </div>
         

@@ -57,6 +57,14 @@ impl UserRole {
             UserRole::Admin => "admin",
         }
     }
+
+    /// Returns a display-friendly version of the role with proper capitalization
+    pub fn display_name(&self) -> &str {
+        match self {
+            UserRole::User => "User",
+            UserRole::Admin => "Admin",
+        }
+    }
 }
 
 impl std::fmt::Display for UserRole {
@@ -209,4 +217,22 @@ pub struct UpdateProfileRequest {
 pub struct ChangePasswordRequest {
     pub current_password: String,
     pub new_password: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_user_role_display_name() {
+        assert_eq!(UserRole::User.display_name(), "User");
+        assert_eq!(UserRole::Admin.display_name(), "Admin");
+    }
+
+    #[test]
+    fn test_user_role_as_str_unchanged() {
+        // Ensure as_str() still returns lowercase for database operations
+        assert_eq!(UserRole::User.as_str(), "user");
+        assert_eq!(UserRole::Admin.as_str(), "admin");
+    }
 }
