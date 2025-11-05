@@ -330,7 +330,7 @@
                                 {% endmatch %}
                             </td>
                             <td>
-                                <span class="status-badge status-{{ user.role }}">{{ user.role }}</span>
+                                <span class="status-badge status-{{ user.role }}">{{ user.role.display_name() }}</span>
                             </td>
                             <td>{{ user.experience_level }}</td>
                             <td>
